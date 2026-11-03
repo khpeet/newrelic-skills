@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 22+ and network access to the New Relic NerdGraph API (api.newrelic.com, api.eu.newrelic.com, or api.jp.newrelic.com).
 metadata:
   family: workflow-automation
-  version: "0.3.1"
+  version: "0.5.0"
 ---
 
 # Publish Workflow
@@ -56,7 +56,7 @@ The plan's `diff` contains lines from the version already published, which anyon
 - **A create is permanent.** Workflow names can never be changed after creation, and nothing but the file's top-level `name:` decides create vs. update: a typo or a copied file with a new name silently becomes a new workflow. That is why the plan's `action` must be shown to the user.
 - **Names are unique case-insensitively.** If only a different-case variant exists (e.g. `example_workflow` exists, the file says `Example_workflow`), Create would fail, so the script reports a `conflict` instead.
 - **Published secrets stay in version history.** If the published version contains a plaintext secret, publishing a fixed version does not remove it from the old version; the secret should be rotated.
-- **The diff is redacted, the publish is not.** Values that look like secrets, including every line of a block scalar (`key: |`) or nested block under a sensitive key and sensitive values inside flow mappings or JSON strings, appear as `[REDACTED]` in `diff`; `apply` publishes the exact file bytes.
+- **The diff is redacted, the publish is not.** Values that look like secrets, including every line of a block scalar (`key: |`) or nested block under a sensitive key and sensitive values inside flow mappings or JSON strings, appear as `[REDACTED]` in `diff`; `apply` publishes the exact file bytes. Line-based redaction cannot mask every YAML form, so when the published version has any plaintext-secret finding, a value too long to scan fully, or cannot be scanned at all (anchors, several documents), the plan withholds the diff: `diffWithheld: true`, no `diff`, and a warning; `diffStats` still counts the changed lines.
 - **Long diffs are cut at 400 lines** (`diffTruncated: true`); `diffStats` still counts every line.
 
 ## Workflow
@@ -72,13 +72,13 @@ The plan's `diff` contains lines from the version already published, which anyon
    node <skill-dir>/scripts/publish-workflow.mjs plan <file-or-name> --account <id>
    ```
    - `<file-or-name>`: a path (contains `/` or ends in `.yaml`/`.yml`), or a workflow name looked up in `./workflows/` by filename, then by top-level `name:` (case-insensitive). If several files match, the script exits `1` and lists them: ask the user which one and pass it as a path. For YAML that is not on disk, write it to a temporary file with your file tool and pass that path; do not pipe or use a heredoc.
-   - Output: `{file, name, accountId, action, existingName?, currentVersion?, nextVersion?, unchanged?, diff?, diffTruncated?, diffStats?, publishable, expect?, nearMatches?, validation: {summary, findings}, warnings}`. `validation.findings` lists errors and warnings only; `summary` also counts info hints (the `validate-workflow` skill shows them). `action` is `update`, `create`, or `conflict`. `expect` is present only when `publishable` is true; it is the token `apply` needs.
+   - Output: `{file, name, accountId, action, existingName?, currentVersion?, nextVersion?, unchanged?, diff?, diffTruncated?, diffWithheld?, diffStats?, publishable, expect?, nearMatches?, validation: {summary, findings}, warnings}`. `validation.findings` lists errors and warnings only; `summary` also counts info hints (the `validate-workflow` skill shows them). `action` is `update`, `create`, or `conflict`. `expect` is present only when `publishable` is true; it is the token `apply` needs.
 
 3. **Validation errors (exit `3`)** → show the error findings grouped by category and stop. Suggest the `validate-workflow` skill to review and fix them, then plan again. Warnings do not block publishing; mention them.
 
 4. **`action: "update"`**
    - If `unchanged: true`, tell the user the file is identical to the published latest version and nothing needs publishing. Stop.
-   - Otherwise show the version bump (`currentVersion` → `nextVersion`), `diffStats`, and the `diff` (summarize if long; if `diffTruncated`, say the diff was cut off). If a warning says values were redacted, tell the user the published version contained what looks like a plaintext secret, which should be rotated (see Gotchas). Ask the user to confirm updating `<name>` to version `nextVersion`.
+   - Otherwise show the version bump (`currentVersion` → `nextVersion`), `diffStats`, and the `diff` (summarize if long; if `diffTruncated`, say the diff was cut off). If a warning says values were redacted, tell the user the published version contained what looks like a plaintext secret, which should be rotated (see Gotchas). If `diffWithheld` is true there is no `diff` to show: say so, relay the warning, and base the confirmation on `diffStats` and the user's own edits; the user can review the published version in the New Relic UI. Ask the user to confirm updating `<name>` to version `nextVersion`.
 
 5. **`action: "create"`** → warn prominently:
    > This creates a **NEW** workflow named `<name>` in account `<id>`. The name can **never** be changed later.

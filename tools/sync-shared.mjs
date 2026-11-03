@@ -23,7 +23,7 @@ const withHeader = {
   mjs: (source, text) => `// ${notice(source)}\n${text}`,
   md: (source, text) => {
     const comment = `<!-- ${notice(source)} -->\n`;
-    const frontmatter = text.match(/^---\n[\s\S]*?\n---\n/);
+    const frontmatter = text.match(FRONTMATTER);
     return frontmatter ? frontmatter[0] + comment + text.slice(frontmatter[0].length) : comment + text;
   },
 };
@@ -35,8 +35,13 @@ const LINK = /(?<!!)\[[^\]]*\]\(([^)\s#]+)(?:#[^)\s]*)?\)/g;
 
 const listDirs = (dir) => (existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name) : []);
 const listFiles = (dir, ext) => (existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(`.${ext}`)) : []);
-// Only files carrying the header written by withHeader count as generated copies.
-const isGenerated = { mjs: (text) => text.startsWith(`// ${MARKER}`), md: (text) => text.includes(`<!-- ${MARKER}`) };
+// Only files carrying the header written by withHeader count as generated copies: on line 1 for .mjs, right after the
+// frontmatter (if any) for .md. A hand-written file that merely quotes the marker is left alone.
+const FRONTMATTER = /^---\n[\s\S]*?\n---\n/;
+const isGenerated = {
+  mjs: (text) => text.startsWith(`// ${MARKER}`),
+  md: (text) => text.replace(FRONTMATTER, '').startsWith(`<!-- ${MARKER}`),
+};
 const importsOf = (text, prefix) =>
   [...text.matchAll(IMPORT)].map((m) => m[1]).filter((spec) => spec.startsWith(prefix)).map((spec) => spec.slice(prefix.length));
 

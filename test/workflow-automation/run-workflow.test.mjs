@@ -345,6 +345,21 @@ test('--inputs-file: inputs from a JSON file hash the same as other forms; a cha
   assert.equal(mutations().length, 1);
 });
 
+test('plan truncates action names from the published definition', async () => {
+  const long = VALID.replace('newrelic.ingest.sendLogs', `x.${'A'.repeat(3000)}`);
+  const { json } = await run(['plan', 'demoWorkflow', '--input', 'message=hi'], { respond: router({ published: { demoWorkflow: { 2: long } } }) });
+  assert.equal(json.actions.length, 1);
+  assert.ok(json.actions[0].length <= 201, `action is ${json.actions[0].length} chars`);
+});
+
+test('--inputs-file: an invalid-JSON error never quotes the file content', async () => {
+  writeFileSync(join(cwd, 'secret.json'), '{"leak-canary-67890": ,}');
+  const { code, stderr } = await run(['plan', 'demoWorkflow', '--inputs-file', 'secret.json']);
+  assert.equal(code, 1);
+  assert.match(stderr, /is not valid JSON\./);
+  assert.doesNotMatch(stderr, /leak-canary/);
+});
+
 test('--inputs-file: missing, invalid, non-object, or duplicate keys are usage errors before any API call', async () => {
   writeFileSync(join(cwd, 'bad.json'), '{nope');
   writeFileSync(join(cwd, 'list.json'), '[1]');

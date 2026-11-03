@@ -5,7 +5,7 @@
 
 import { parseArgs } from 'node:util';
 import { ApiError, UsageError, checkEnv, getConfig, nerdgraph, resolveAccountId } from './lib/nerdgraph.mjs';
-import { MAX_SCAN_CHARS, SENSITIVE_KEY, TOKEN_PATTERNS, WEBHOOK_KEY, readTarget, validateAll } from './lib/validation.mjs';
+import { MAX_SCAN_CHARS, SENSITIVE_KEY, TOKEN_PATTERNS, WEBHOOK_KEY, readTarget, scanSecrets, validateAll } from './lib/validation.mjs';
 import { encodeYaml, findWorkflow, getDefinition, listWorkflows, normalizeNewlines, sha12 } from './lib/workflows.mjs';
 import { assertCommandFirst, printJson, reportError, runIfMain } from './lib/cli.mjs';
 import { assertNotInSkillDir, skillDirOf } from './lib/paths.mjs';
@@ -13,7 +13,7 @@ import { assertNotInSkillDir, skillDirOf } from './lib/paths.mjs';
 const SKILL_DIR = skillDirOf(import.meta.url);
 // Identifies this skill in the User-Agent of every NerdGraph request. Keep version equal to SKILL.md metadata.version
 // (test/workflow-automation/client-version.test.mjs checks it).
-export const CLIENT = { skill: 'publish-workflow', version: '0.3.1' };
+export const CLIENT = { skill: 'publish-workflow', version: '0.5.0' };
 
 const USAGE = `Usage: node publish-workflow.mjs <command> [options]
 
@@ -292,8 +292,16 @@ export async function planPublish({ file, text, account, env, fetchImpl }) {
     const unchanged = normalizeNewlines(current) === normalizeNewlines(text);
     const { diff, truncated, stats, redacted: masked } = unifiedDiff(current, text, { oldLabel: `${name} v${match.latestVersion} (New Relic)`, newLabel: file, maskSecrets: true });
     result = { file, name, accountId, action: 'update', currentVersion: match.latestVersion, nextVersion: match.latestVersion + 1, unchanged };
+    // redactDiff works line by line and cannot mask every YAML form (indentless lists, continuation lines of multi-line
+    // scalars, complex keys), so when the published text has any secret finding, or cannot be scanned, no diff lines are shown.
+    const published = scanSecrets(current);
     if (unchanged) warnings.push(`The file is identical to the published version ${match.latestVersion}; there is nothing to publish.`);
-    else {
+    else if (published === null || published.length > 0) {
+      result.diffWithheld = true;
+      warnings.push(published === null
+        ? `The diff was withheld: published version ${match.latestVersion} could not be scanned for secrets (it is not a single plain YAML mapping), and line-based redaction cannot mask every form. diffStats still counts the changed lines.`
+        : `The diff was withheld: published version ${match.latestVersion} appears to contain plaintext secrets or values too long to scan, and line-based redaction cannot mask every form. diffStats still counts the changed lines. Any secret in the published version remains in its version history.`);
+    } else {
       const safe = redactDiff(diff, config.apiKey);
       if (safe.redacted || masked) warnings.push('Values that look like plaintext secrets were redacted from the diff. If the published version contains them, they remain in its version history.');
       Object.assign(result, { diff: safe.diff, ...(truncated ? { diffTruncated: true } : {}) });

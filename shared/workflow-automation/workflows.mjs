@@ -88,7 +88,8 @@ export function writeNoOverwrite(path, content, force, root) {
   mkdirSync(dirname(path), { recursive: true });
   try {
     const flag = constants.O_WRONLY | constants.O_CREAT | (constants.O_NOFOLLOW ?? 0) | (force ? constants.O_TRUNC : constants.O_EXCL);
-    writeFileSync(path, content, { flag });
+    // 0600: fetched or drafted YAML can hold plaintext secrets. The mode applies only when the file is created.
+    writeFileSync(path, content, { flag, mode: 0o600 });
   } catch (err) {
     if (err.code === 'ELOOP') throw new UsageError(`Refusing to write through the symbolic link ${path}.`);
     if (err.code === 'EEXIST') throw new UsageError(`${path} already exists. Pass --force to overwrite or --out to choose another path.`);

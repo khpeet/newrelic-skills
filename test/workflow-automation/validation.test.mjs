@@ -46,3 +46,14 @@ test('readTarget: exactly one of a target or --stdin; strict UTF-8 for both', as
   writeFileSync(join(cwd, 'workflows', 'bad.yaml'), Buffer.from([0x6e, 0x3a, 0x20, 0xe9]));
   await assert.rejects(readTarget({}, ['bad'], null, cwd, 'USAGE'), /bad\.yaml is not valid UTF-8; re-save it as UTF-8/);
 });
+
+test('validateLocal: step and validation types named like Object.prototype members are findings, not crashes', async () => {
+  const { validateLocal } = await import('../../shared/workflow-automation/validation.mjs');
+  for (const type of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    const step = validateLocal(`name: wf\nsteps:\n  - name: s\n    type: ${type}\n`);
+    assert.ok(step.findings.some((f) => f.ruleId === 'step-type'), `step type ${type}`);
+    const input = validateLocal(`name: wf\nworkflowInputs:\n  x:\n    type: String\n    validations:\n      - type: ${type}\n        errorMessage: m\nsteps:\n  - name: s\n    type: wait\n    seconds: 1\n`);
+    assert.ok(input.findings.some((f) => f.ruleId === 'validation-type'), `validation type ${type}`);
+    assert.ok(!input.findings.some((f) => /native code/.test(f.message)), `validation type ${type} message`);
+  }
+});

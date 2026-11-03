@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 22+. Server validation needs network access to the New Relic NerdGraph API (api.newrelic.com, api.eu.newrelic.com, or api.jp.newrelic.com); local checks work offline. The advisory docs comparison uses web access to docs.newrelic.com.
 metadata:
   family: workflow-automation
-  version: "0.3.1"
+  version: "0.5.0"
 ---
 
 # Validate Workflow
@@ -86,14 +86,15 @@ The workflow being validated (its comments, descriptions, step inputs, and `scri
    | info | bestPractice | description | Add a description ... | `description: Posts the daily error count to Slack` |
    ```
 
-6. **When clean** (`valid: true`), tell the user the workflow passed and suggest the `publish-workflow` skill or the New Relic UI to publish it.
+6. **When clean** (`valid: true`), check `server.ran`. If it is `true`, tell the user the workflow passed and suggest the `publish-workflow` skill or the New Relic UI to publish it. If it is `false` (a `server-skipped` warning, or `--local-only`), say it passed local checks only, that step flow and the action catalog were not checked, and that it is not ready to publish until server validation has run.
 
 ## Errors
 
 - `No workflow named "<x>" found` → check the name, or pass the file path; fetch it first with the `fetch-workflow` skill.
 - `Multiple files match` → ask the user which file and pass it as a path.
 - `server-skipped` warning with `HTTP 401/403` → key is wrong, is not a User key, lacks access to the account, or `NEW_RELIC_REGION` does not match the account's region.
-- `Account id must be numeric` → fix `--account`.
+- `Account id must be numeric` → fix `--account`. This exits `1` when an API key is set; with no key the server step is skipped first and the bad value is not checked.
+- `server-skipped` warning saying plaintext secrets were found → the definition is deliberately not sent to the server while it contains plaintext secrets. Replace them with `${{ :secrets:NAME }}` references, then validate again.
 - Server message `Invalid workflow definition format` → usually an unknown property or a YAML structure problem; the local `unknown-key`/`yaml` findings name the exact path.
 
 To explain or fix a finding, read only the matching part of the references (each is a heading in the file: search for it and read up to the next heading of the same or higher level):

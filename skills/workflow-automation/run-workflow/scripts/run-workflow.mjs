@@ -21,7 +21,7 @@ import { parseYaml } from './lib/yaml.mjs';
 const SKILL_DIR = skillDirOf(import.meta.url);
 // Identifies this skill in the User-Agent of every NerdGraph request. Keep version equal to SKILL.md metadata.version
 // (test/workflow-automation/client-version.test.mjs checks it).
-export const CLIENT = { skill: 'run-workflow', version: '0.3.1' };
+export const CLIENT = { skill: 'run-workflow', version: '0.5.0' };
 
 const USAGE = `Usage: node run-workflow.mjs <command> [options]
 
@@ -194,7 +194,7 @@ export async function planRun({ target, values, env, cwd, fetchImpl }) {
     inputs: displayInputs(resolved),
     declaredInputs: isMap(doc.workflowInputs) ? Object.keys(doc.workflowInputs).map((n) => truncate(n)) : [],
     steps: steps.length,
-    actions: [...new Set(steps.filter((s) => s.type === 'action' && typeof s.action === 'string').map((s) => s.action))],
+    actions: [...new Set(steps.filter((s) => s.type === 'action' && typeof s.action === 'string').map((s) => truncate(s.action)))],
     logLevel,
     startable,
     findings,

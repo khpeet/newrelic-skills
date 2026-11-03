@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 22+ and network access to docs.newrelic.com. The live action catalog needs network access to the New Relic NerdGraph API (api.newrelic.com, api.eu.newrelic.com, or api.jp.newrelic.com); without credentials the skill uses the docs catalog only.
 metadata:
   family: workflow-automation
-  version: "0.4.1"
+  version: "0.5.0"
 ---
 
 # Build Workflow

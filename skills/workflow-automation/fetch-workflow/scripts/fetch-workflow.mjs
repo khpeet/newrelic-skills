@@ -15,7 +15,7 @@ const MAX_SECRET_PATH_CHARS = 120;
 const SKILL_DIR = skillDirOf(import.meta.url);
 // Identifies this skill in the User-Agent of every NerdGraph request. Keep version equal to SKILL.md metadata.version
 // (test/workflow-automation/client-version.test.mjs checks it).
-export const CLIENT = { skill: 'fetch-workflow', version: '0.3.1' };
+export const CLIENT = { skill: 'fetch-workflow', version: '0.5.0' };
 
 export { decodeYaml, listWorkflows };
 
@@ -47,18 +47,30 @@ export async function getWorkflow({ name, version, accountId, out, force, cwd },
   if (!NAME_RE.test(name)) {
     throw new UsageError(`Invalid workflow name "${name}": must match ${NAME_RE}.`);
   }
-  let resolvedName = name;
-  let resolvedVersion = version;
-  if (resolvedVersion === undefined) {
+  // Read-only, so a name that differs only in letter case resolves to the server's exact spelling, with or without --version.
+  let definition;
+  let yaml;
+  if (version === undefined) {
     const { match, caseVariants } = findWorkflow(await listWorkflows(accountId, config, opts), name);
-    // Read-only, so a name that differs only in letter case resolves to the server's exact spelling.
     const found = match ?? caseVariants[0];
     if (!found) throw new ApiError(`Workflow "${name}" not found in account ${accountId}.`);
-    resolvedName = found.name;
-    resolvedVersion = found.latestVersion;
+    ({ definition, yaml } = await getDefinition(accountId, found.name, found.latestVersion, config, opts));
+  } else {
+    // One call for the exact name; the list is read only when that fails, to find a spelling that differs in letter case.
+    try {
+      ({ definition, yaml } = await getDefinition(accountId, name, version, config, opts));
+    } catch (err) {
+      if (!(err instanceof ApiError)) throw err;
+      let variant;
+      try {
+        variant = findWorkflow(await listWorkflows(accountId, config, opts), name).caseVariants[0];
+      } catch {
+        throw err;
+      }
+      if (!variant) throw err;
+      ({ definition, yaml } = await getDefinition(accountId, variant.name, version, config, opts));
+    }
   }
-
-  const { definition, yaml } = await getDefinition(accountId, resolvedName, resolvedVersion, config, opts);
   // The server's name builds the default output path, so it gets the same check as --name.
   if (typeof definition.name !== 'string' || !NAME_RE.test(definition.name)) {
     throw new ApiError(`NerdGraph returned an invalid workflow name ${JSON.stringify(definition.name)}: must match ${NAME_RE}.`);
@@ -68,7 +80,13 @@ export async function getWorkflow({ name, version, accountId, out, force, cwd },
   if (out !== undefined) assertInsideCwd(path, cwd, '--out');
   writeNoOverwrite(path, yaml, force, cwd);
   const result = { name: definition.name, version: Number(definition.version), accountId, path, bytes: Buffer.byteLength(yaml) };
-  const findings = scanSecrets(yaml) ?? [];
+  const scanned = scanSecrets(yaml);
+  // null means the text is not a single YAML mapping (parse error, anchors, several documents): say so instead of reporting a clean file.
+  if (scanned === null) {
+    result.secretScanSkipped = true;
+    result.hint = 'The saved file could not be scanned for plaintext secrets (it is not a single plain YAML mapping). Review it manually before committing or sharing it.';
+  }
+  const findings = scanned ?? [];
   const secrets = findings.filter((s) => s.ruleId !== 'secret-scan-truncated');
   const unscanned = findings.filter((s) => s.ruleId === 'secret-scan-truncated');
   const pathsOf = (list) => [...new Set(list.map((s) => s.path).filter(Boolean))].slice(0, MAX_SECRET_PATHS).map((p) => p.slice(0, MAX_SECRET_PATH_CHARS));

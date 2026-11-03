@@ -451,6 +451,20 @@ test('missing credentials skip the server with a warning', async () => {
   assert.equal(calls.length, 0);
   assert.equal(json.server.ran, false);
   assert.equal(json.summary.warnings, 1);
+  const skipped = json.findings.find((f) => f.ruleId === 'server-skipped');
+  assert.doesNotMatch(skipped.message, /\.\./, 'no doubled period');
+});
+
+test('plaintext secrets: the definition is not sent to the server, and the skip says why', async () => {
+  const secret = 'hunter2secretvalue';
+  writeFileSync(join(cwd, 'wf.yaml'), VALID.replace('    inputs:\n', `    inputs:\n      password: ${secret}\n`));
+  const { code, json, stdout } = await run(['wf.yaml']);
+  assert.equal(code, 3);
+  assert.equal(calls.length, 0, 'no NerdGraph call was made');
+  assert.equal(json.server.ran, false);
+  assert.match(json.server.error, /plaintext secrets/);
+  assert.ok(json.findings.some((f) => f.ruleId === 'plaintext-secret'));
+  assert.ok(!stdout.includes(secret));
 });
 
 test('--local-only and unparseable YAML skip the server', async () => {

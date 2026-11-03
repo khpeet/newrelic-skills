@@ -130,3 +130,20 @@ test('nerdgraph exposes GraphQL error classes next to the messages', async () =>
     return true;
   });
 });
+
+test('getConfig refuses a key that is not a valid header value, without echoing it', () => {
+  for (const key of [' NRAK-LEAKCANARY', 'NRAK-LEAKCANARY\n', 'NRAK-LEAK\u0000CANARY', 'NRAK-LEAKÇANARY', 'NRAK LEAKCANARY']) {
+    assert.throws(
+      () => getConfig({ NEW_RELIC_API_KEY: key }),
+      (err) => err instanceof UsageError && /cannot be sent as a request header/.test(err.message) && !err.message.includes('LEAK'),
+    );
+  }
+});
+
+test('nerdgraph redacts the trimmed key too when fetch rejects a hand-built config', async () => {
+  const bad = { ...config, apiKey: ' NRAK-LEAKCANARY1234\u0000x' };
+  await assert.rejects(
+    () => nerdgraph('query { a }', {}, bad),
+    (err) => err instanceof ApiError && !err.message.includes('LEAKCANARY'),
+  );
+});

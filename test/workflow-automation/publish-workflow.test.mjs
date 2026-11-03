@@ -455,7 +455,7 @@ test('unifiedDiff: hunks with 3 lines of context, separate hunks, and truncation
   assert.deepEqual(unifiedDiff('a\r\nb\r\n', 'a\nb').stats, { added: 0, removed: 0 });
 });
 
-test('plan: plaintext secrets in the published version are redacted from the diff', async () => {
+test('plan: plaintext secrets in the published version withhold the diff', async () => {
   const token = `NRAK-${'A'.repeat(27)}`;
   const published = VALID.replace('    inputs:\n', `    inputs:\n      apiKey: ${token}\n      password: hunter2\n`);
   const local = VALID.replace('    inputs:\n', '    inputs:\n      apiKey: ${{ :secrets:NR_KEY }}\n');
@@ -464,8 +464,51 @@ test('plan: plaintext secrets in the published version are redacted from the dif
   const { code, json, stdout } = await run(['plan', 'demoWorkflow'], { respond });
   assert.equal(code, 0);
   assert.ok(!stdout.includes(token) && !stdout.includes('hunter2'));
-  assert.match(json.diff, /-      apiKey: NRAK…\[REDACTED\]\n-      password: \[REDACTED\]\n\+      apiKey: \$\{\{ :secrets:NR_KEY \}\}\n/);
-  assert.ok(json.warnings.some((w) => /redacted from the diff/.test(w)));
+  assert.equal(json.diff, undefined);
+  assert.equal(json.diffWithheld, true);
+  assert.deepEqual(json.diffStats, { added: 1, removed: 2 });
+  assert.equal(json.publishable, true);
+  assert.match(json.expect, /^update@1#[0-9a-f]{12}$/);
+  assert.ok(json.warnings.some((w) => /diff was withheld/.test(w)));
+});
+
+// Forms the line-based redactDiff cannot mask; the published-text scan flags each, so the diff is withheld.
+const LEAKY_FORMS = {
+  'indentless list under a sensitive key': '      apiKeys:\n      - hunter2secret\n',
+  'tagged scalar continued on the next line': '      password: !!str\n        hunter2secret\n',
+  'multi-line plain scalar': '      password: first\n        hunter2secret\n',
+  'multi-line quoted scalar': '      password: "first\n        hunter2secret"\n',
+  'complex key': '      ? token\n      : hunter2secret\n',
+};
+
+for (const [label, inner] of Object.entries(LEAKY_FORMS)) {
+  test(`plan: published ${label} never reaches the output`, async () => {
+    const published = VALID.replace('    inputs:\n', `    inputs:\n${inner}`);
+    writeWorkflow('demoWorkflow.yaml', VALID);
+    const { code, json, stdout } = await run(['plan', 'demoWorkflow'], { respond: router({ published: { demoWorkflow: { 1: published } } }) });
+    assert.equal(code, 0);
+    assert.ok(!stdout.includes('hunter2secret'));
+    assert.equal(json.diffWithheld, true);
+    assert.equal(json.diff, undefined);
+  });
+}
+
+test('plan: a published version that cannot be scanned (YAML anchors) withholds the diff', async () => {
+  const published = VALID.replace('    inputs:\n', '    inputs:\n      base: &b\n        password: hunter2secret\n      copy: *b\n');
+  writeWorkflow('demoWorkflow.yaml', VALID);
+  const { code, json, stdout } = await run(['plan', 'demoWorkflow'], { respond: router({ published: { demoWorkflow: { 1: published } } }) });
+  assert.equal(code, 0);
+  assert.ok(!stdout.includes('hunter2secret'));
+  assert.equal(json.diffWithheld, true);
+  assert.equal(json.diff, undefined);
+  assert.ok(json.warnings.some((w) => /could not be scanned/.test(w)));
+});
+
+test('plan: a clean published version still shows the diff', async () => {
+  writeWorkflow('demoWorkflow.yaml', EDITED);
+  const { json } = await run(['plan', 'demoWorkflow'], { respond: router({ published: { demoWorkflow: { 1: VALID } } }) });
+  assert.equal(json.diffWithheld, undefined);
+  assert.match(json.diff, /\+        - message: hello world/);
 });
 
 test('redactDiff: case-insensitive token patterns keep their flags (lowercase NRAK body is redacted)', () => {

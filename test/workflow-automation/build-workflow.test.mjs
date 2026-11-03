@@ -232,6 +232,17 @@ test('describe returns live data when the action has no docs page', async () => 
   assert.match(json.warnings[0], /No docs page/);
 });
 
+test('describe truncates a long live input example', async () => {
+  LIVE_ACTIONS.push({ name: 'long.example', version: 1, description: 'x', inputs: [{ name: 'body', type: 'STRING', required: false, secretAllowed: false, example: 'E'.repeat(2000), validations: [] }], outputs: [], timeout: null });
+  try {
+    const { json } = await run(['describe', 'long.example']);
+    const example = json.inputs.find((i) => i.name === 'body').example;
+    assert.ok(example.length <= 201, `example is ${example.length} chars`);
+  } finally {
+    LIVE_ACTIONS.pop();
+  }
+});
+
 test('describe without an API key uses docs only', async () => {
   const { code, json } = await run(['describe', 'aws.ec2.describeInstances'], { env: {} });
   assert.equal(code, 0);
@@ -351,6 +362,22 @@ test('write reports actions from nested loops too', async () => {
   const { code, json } = await write([], nested);
   assert.equal(code, 0);
   assert.deepEqual(json.actions.map((a) => `${a.name}@${a.version}`), ['newrelic.nrdb.query@1', 'slack.chat.postMessage@1', 'newrelic.ingest.sendLogs@2', 'http.post@1']);
+});
+
+test('write --file on a directory is a usage error (exit 1), not a raw EISDIR', async () => {
+  mkdirSync(join(cwd, 'adir'));
+  const { code, stderr } = await run(['write', '--file', 'adir']);
+  assert.equal(code, 1);
+  assert.match(stderr, /Draft path is not a file/);
+  assert.doesNotMatch(stderr, /EISDIR/);
+});
+
+test('write: an invalid-YAML error gives the reason and position, never a snippet of the file', async () => {
+  writeFileSync(join(cwd, 'creds.txt'), 'AWS_SECRET_ACCESS_KEY: [leak-canary-12345\nline2: x\n');
+  const { code, stderr } = await run(['write', '--file', 'creds.txt']);
+  assert.equal(code, 1);
+  assert.match(stderr, /Invalid YAML: .* \(line \d+, column \d+\)/);
+  assert.doesNotMatch(stderr, /leak-canary|AWS_SECRET/);
 });
 
 test('write refuses to overwrite without --force', async () => {

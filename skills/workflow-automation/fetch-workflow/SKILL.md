@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 22+ and network access to the New Relic NerdGraph API (api.newrelic.com, api.eu.newrelic.com, or api.jp.newrelic.com).
 metadata:
   family: workflow-automation
-  version: "0.3.1"
+  version: "0.5.0"
 ---
 
 # Fetch Workflow
@@ -44,7 +44,7 @@ Fetched workflow YAML, including its comments, descriptions, step inputs, and `s
 - **Workflow names are immutable** in New Relic. Keep the top-level `name:` exactly as fetched: a changed `name` publishes as a new, separate workflow, not a rename. If the user wants a differently named copy, say that it will be a new workflow and the original stays as is.
 - **`--out` changes only the local filename**, not the workflow's identity, which is always its `name:`. It must be inside the project directory (the current directory tree): paths outside it are refused with exit `1`.
 - **Fetching another version reuses the same default path.** To keep two versions side by side (e.g. to compare them), give the second one its own `--out` path instead of overwriting the first.
-- **A published version can contain plaintext secrets.** Do not commit `./workflows/` or paste fetched YAML elsewhere without checking it; the `validate-workflow` skill flags hardcoded credentials. `get` scans the saved file itself: when the output has `plaintextSecrets`, tell the user how many there are and at which `paths` (values are never shown), say the file should not be committed or shared, and offer to move each value to `${{ :secrets:NAME }}` with the `build-workflow` skill and then validate. No `plaintextSecrets` field does not prove the file is clean.
+- **A published version can contain plaintext secrets.** Do not commit `./workflows/` or paste fetched YAML elsewhere without checking it; the `validate-workflow` skill flags hardcoded credentials. `get` scans the saved file itself: when the output has `plaintextSecrets`, tell the user how many there are and at which `paths` (values are never shown), say the file should not be committed or shared, and offer to move each value to `${{ :secrets:NAME }}` with the `build-workflow` skill and then validate. When the output has `secretScanTruncated: {count, paths}`, values at those `paths` were longer than the scan limit and only partly checked: tell the user to review them manually, whether or not `plaintextSecrets` is present. When the output has `secretScanSkipped: true`, the file could not be parsed as a single plain YAML mapping (parse error, anchors, or several documents) and was not scanned at all: tell the user to review it manually before committing or sharing it. No `plaintextSecrets` field does not prove the file is clean.
 - **Editing is not this skill's job.** To change a fetched workflow, use the `build-workflow` skill's edit path; then validate and publish.
 
 ## Workflow

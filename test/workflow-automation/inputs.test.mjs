@@ -124,3 +124,16 @@ test('checkRunInputs: an Int given as a JSON number must be a safe integer; larg
   assert.deepEqual(checkRunInputs(inputs, { n: 5 }).resolved, [{ key: 'n', value: '5', source: 'supplied' }]);
   assert.deepEqual(checkRunInputs(inputs, { n: '99999999999999999999' }).resolved, [{ key: 'n', value: '99999999999999999999', source: 'supplied' }]);
 });
+
+test('parseInputArgs: --inputs-file JSON errors never quote the file; --inputs-json errors still do', () => {
+  const file = { path: '/tmp/in.json', text: '{"leak-canary-67890": ,}' };
+  assert.throws(() => parseInputArgs([], undefined, file), (err) => /--inputs-file \/tmp\/in\.json is not valid JSON\.$/.test(err.message) && !err.message.includes('leak-canary'));
+  assert.throws(() => parseInputArgs([], '{"mine": ,}'), /--inputs-json is not valid JSON: /);
+});
+
+test('checkRunInputs: a validation type named like an Object.prototype member is ignored, not applied', () => {
+  for (const type of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    const inputs = { x: { type: 'String', validations: [{ type, errorMessage: 'm' }] } };
+    assert.doesNotThrow(() => checkRunInputs(inputs, { x: 'v' }), type);
+  }
+});

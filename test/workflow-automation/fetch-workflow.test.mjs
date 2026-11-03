@@ -137,10 +137,29 @@ test('get warns about plaintext secrets in the saved file: count and paths, neve
   assert.equal(readFileSync(result.path, 'utf8'), secretYaml);
 });
 
+test('get reports secretScanSkipped when the saved YAML cannot be scanned (anchors)', async () => {
+  const anchored = 'name: alpha\nsteps:\n  - name: s1\n    type: action\n    action: newrelic.ingest.sendLogs\n    version: 1\n    inputs:\n      base: &b\n        password: dummypassword\n';
+  const fetchImpl = async (url, init) => {
+    const { query } = JSON.parse(init.body);
+    const body = query.includes('ListWorkflows')
+      ? page([def('alpha', 1)])
+      : { data: { actor: { account: { workflowAutomation: { workflow: def('alpha', 1, Buffer.from(anchored).toString('base64')) } } } } };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  const { code, stdout } = await run(['get', '--name', 'alpha'], { fetchImpl });
+  assert.equal(code, 0);
+  const result = JSON.parse(stdout);
+  assert.equal(result.secretScanSkipped, true);
+  assert.match(result.hint, /could not be scanned/);
+  assert.equal(result.plaintextSecrets, undefined);
+  assert.ok(!stdout.includes('dummypassword'));
+});
+
 test('get without plaintext secrets adds no warning fields', async () => {
   const { stdout } = await run(['get', '--name', 'alpha']);
   const result = JSON.parse(stdout);
   assert.equal(result.plaintextSecrets, undefined);
+  assert.equal(result.secretScanSkipped, undefined);
   assert.equal(result.hint, undefined);
 });
 
@@ -152,6 +171,21 @@ test('get with a different letter case resolves the server\'s exact name before 
   assert.equal(result.path, join(cwd, 'workflows', 'alpha.yaml'));
   assert.equal(calls.at(-1).variables.name, 'alpha');
   assert.equal(calls.at(-1).variables.version, 2);
+});
+
+test('get --version with a different letter case resolves the exact name only after the exact-name call fails', async () => {
+  const { code, stdout } = await run(['get', '--name', 'Alpha', '--version', '1']);
+  assert.equal(code, 0);
+  assert.equal(JSON.parse(stdout).name, 'alpha');
+  const names = calls.filter((c) => c.variables.name).map((c) => c.variables.name);
+  assert.deepEqual(names, ['Alpha', 'alpha']);
+  assert.equal(calls.at(-1).variables.version, 1);
+});
+
+test('get --version for a workflow that does not exist reports the original not-found error', async () => {
+  const { code, stderr } = await run(['get', '--name', 'nope', '--version', '1']);
+  assert.equal(code, 2);
+  assert.match(stderr, /Workflow "nope" version 1 not found/);
 });
 
 test('get with --version skips list lookup', async () => {

@@ -3,7 +3,7 @@
 // actionDefinitions catalog (enriched from the docs actions catalog) and save drafted YAML.
 // Prints JSON to stdout, diagnostics to stderr. Never prompts.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -18,7 +18,7 @@ import { parseYaml } from './lib/yaml.mjs';
 const SKILL_DIR = skillDirOf(import.meta.url);
 // Identifies this skill in the User-Agent of every NerdGraph request. Keep version equal to SKILL.md metadata.version
 // (test/workflow-automation/client-version.test.mjs checks it).
-export const CLIENT = { skill: 'build-workflow', version: '0.4.1' };
+export const CLIENT = { skill: 'build-workflow', version: '0.5.0' };
 
 const USAGE = `Usage: node build-workflow.mjs <command> [options]
 
@@ -275,7 +275,7 @@ function mergeFields(liveFields = [], docFields = [], { input }) {
     if (input) {
       field.required = Boolean(l.required);
       field.secretAllowed = Boolean(l.secretAllowed);
-      if (l.example) field.example = l.example;
+      if (l.example) field.example = truncate(l.example);
       if (l.validations?.length) field.validations = l.validations.map(normalizeValidation);
     }
     if (d.description) field.description = d.description;
@@ -377,6 +377,7 @@ async function readDraft(values, stdin, cwd) {
   if (values.file !== undefined) {
     const path = resolve(cwd, values.file);
     if (!existsSync(path)) throw new UsageError(`Draft file not found: ${path}`);
+    if (!statSync(path).isFile()) throw new UsageError(`Draft path is not a file: ${path}`);
     const text = readFileSync(path, 'utf8');
     if (!text.trim()) throw new UsageError(`Draft file is empty: ${path}`);
     return text;
@@ -391,7 +392,10 @@ export function writeWorkflow({ text, out, force, cwd }) {
   try {
     documents = parseYaml(text);
   } catch (err) {
-    throw new UsageError(`Invalid YAML: ${err.message}`);
+    // js-yaml's err.message ends with a snippet of the text around the error; the draft file can be any path, so give only
+    // the reason and position (the same fields validate-workflow reports). YamlFeatureError has no reason, and its message is fixed text.
+    const where = err.mark ? ` (line ${err.mark.line + 1}, column ${err.mark.column + 1})` : '';
+    throw new UsageError(`Invalid YAML: ${err.reason || err.message}${where}`);
   }
   if (documents.length !== 1) throw new UsageError(`Invalid YAML: expected exactly one YAML document, found ${documents.length}.`);
   const [doc] = documents;

@@ -31,6 +31,11 @@ export function getConfig(env = process.env, client) {
       'NEW_RELIC_API_KEY is not set. Export a New Relic User API key in your shell before starting the agent.',
     );
   }
+  // The key is sent as an HTTP header value. fetch rejects anything else, and its error message quotes the (trimmed) value,
+  // so refuse it here without echoing it.
+  if (!/^[\x21-\x7e]+$/.test(apiKey)) {
+    throw new UsageError('NEW_RELIC_API_KEY contains whitespace, control, or non-ASCII characters, so it cannot be sent as a request header. Re-export the key without them.');
+  }
   const region = (env.NEW_RELIC_REGION || 'US').toUpperCase();
   if (!ENDPOINTS[region]) {
     throw new UsageError(`NEW_RELIC_REGION must be one of ${Object.keys(ENDPOINTS).join(', ')} (got "${region}").`);
@@ -50,8 +55,13 @@ export function resolveAccountId(flagValue, config) {
   return Number(raw);
 }
 
+// Also masks the trimmed key: fetch quotes a header value after trimming whitespace, so the raw key alone would miss it.
 function redact(text, apiKey) {
-  return apiKey ? String(text).split(apiKey).join('[REDACTED]') : String(text);
+  let out = String(text);
+  for (const key of new Set([apiKey, apiKey?.trim()])) {
+    if (key) out = out.split(key).join('[REDACTED]');
+  }
+  return out;
 }
 
 // Host only (no path or query string) of a redirect's Location header.

@@ -11,7 +11,7 @@ import { assertNotInSkillDir, skillDirOf } from './lib/paths.mjs';
 const SKILL_DIR = skillDirOf(import.meta.url);
 // Identifies this skill in the User-Agent of every NerdGraph request. Keep version equal to SKILL.md metadata.version
 // (test/workflow-automation/client-version.test.mjs checks it).
-export const CLIENT = { skill: 'validate-workflow', version: '0.3.1' };
+export const CLIENT = { skill: 'validate-workflow', version: '0.5.0' };
 
 export { checkSecretRef, resolveTarget, validateLocal, validateRemote };
 
@@ -61,7 +61,7 @@ export async function main(argv, { env = process.env, stdin = process.stdin, std
     const { file, text } = await readTarget(values, positionals, stdin, cwd, USAGE);
     const { doc, relatedDocs, findings, server, summary } = await validateAll(text, { account: values.account, env, fetchImpl, client: CLIENT, localOnly: values['local-only'] });
     if (doc && !server.ran && !values['local-only']) {
-      findings.push({ ruleId: 'server-skipped', severity: 'warning', category: 'server', message: `Server validation not performed: ${server.error}. Local checks do not cover step flow (next targets, loop jumps, duplicate step names) or the action catalog.` });
+      findings.push({ ruleId: 'server-skipped', severity: 'warning', category: 'server', message: `Server validation not performed: ${String(server.error).replace(/\.+$/, '')}. Local checks do not cover step flow (next targets, loop jumps, duplicate step names) or the action catalog.` });
       summary.warnings += 1;
     }
     const result = { file, valid: summary.errors === 0, summary, findings, server, relatedDocs };

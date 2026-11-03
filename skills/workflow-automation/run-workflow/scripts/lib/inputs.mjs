@@ -51,18 +51,20 @@ export function parseInputArgs(pairs = [], json, file) {
     if (eq <= 0) throw new UsageError(`--input must be key=value (got "${pair}").`);
     add(pair.slice(0, eq), pair.slice(eq + 1), '--input');
   }
-  const addJson = (text, option) => {
+  // JSON.parse's message quotes the text around the error. That is the caller's own argument for --inputs-json, but for a
+  // file (any path the caller names) it could echo content the caller never meant to show, so it is left out there.
+  const addJson = (text, option, quoteError) => {
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch (err) {
-      throw new UsageError(`${option} is not valid JSON: ${err.message}`);
+      throw new UsageError(`${option} is not valid JSON${quoteError ? `: ${err.message}` : '.'}`);
     }
     if (!isMap(parsed)) throw new UsageError(`${option} must be a JSON object of input names to values.`);
     for (const [key, value] of Object.entries(parsed)) add(key, value, option);
   };
-  if (json !== undefined) addJson(json, '--inputs-json');
-  if (file !== undefined) addJson(file.text, `--inputs-file ${file.path}`);
+  if (json !== undefined) addJson(json, '--inputs-json', true);
+  if (file !== undefined) addJson(file.text, `--inputs-file ${file.path}`, false);
   return Object.fromEntries(supplied);
 }
 
@@ -115,7 +117,7 @@ function runValidations(validations, parsed, wire) {
   const errors = [];
   const unchecked = [];
   for (const v of validations) {
-    if (!isMap(v) || !VALIDATION_PROPERTY[v.type]) continue;
+    if (!isMap(v) || !Object.hasOwn(VALIDATION_PROPERTY, v.type)) continue;
     const limit = v[VALIDATION_PROPERTY[v.type]];
     // errorMessage comes from the published definition: bound what is echoed back.
     const message = typeof v.errorMessage === 'string' ? truncate(v.errorMessage) : `failed ${v.type} validation`;

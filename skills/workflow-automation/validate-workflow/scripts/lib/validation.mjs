@@ -256,7 +256,7 @@ function checkValidations(f, validations, path) {
       f.error('schema', 'type', 'Validation must be a map.', vPath);
       return;
     }
-    const property = VALIDATION_PROPERTY[v.type];
+    const property = Object.hasOwn(VALIDATION_PROPERTY, v.type) ? VALIDATION_PROPERTY[v.type] : undefined;
     if (v.type === undefined) {
       f.error('schema', 'required', '"type" is required.', `${vPath}.type`);
     } else if (!property) {
@@ -281,7 +281,8 @@ function checkStep(f, step, path) {
   if (step.next !== undefined && typeof step.next !== 'string') f.error('schema', 'type', '"next" must be a string.', `${path}.next`);
   if (step.ignoreErrors !== undefined && typeof step.ignoreErrors !== 'boolean') f.error('schema', 'type', '"ignoreErrors" must be a boolean.', `${path}.ignoreErrors`);
 
-  const typeKeys = STEP_KEYS[step.type];
+  // hasOwn: a type such as "constructor" or "__proto__" must read as unknown, not resolve to an Object.prototype member.
+  const typeKeys = Object.hasOwn(STEP_KEYS, step.type) ? STEP_KEYS[step.type] : undefined;
   if (step.type === undefined) {
     f.error('schema', 'required', '"type" is required.', `${path}.type`);
     return;
@@ -608,7 +609,11 @@ export async function validateAll(text, { account, env, fetchImpl, client, local
   const local = validateLocal(text);
   const findings = [...local.findings];
   let server = { ran: false, error: local.doc ? 'skipped (--local-only)' : 'skipped (YAML did not parse)' };
-  if (local.doc && !localOnly) {
+  // A definition with plaintext secrets is not sent anywhere until they are replaced with ${{ :secrets:NAME }} references.
+  const hasSecretErrors = findings.some((finding) => finding.category === 'secret' && finding.severity === 'error');
+  if (local.doc && !localOnly && hasSecretErrors) {
+    server = { ran: false, error: 'skipped (plaintext secrets found; the definition is not sent to the server until they are replaced with ${{ :secrets:NAME }} references)' };
+  } else if (local.doc && !localOnly) {
     const remote = await validateRemote(text, { account, env, fetchImpl, client });
     server = remote.server;
     findings.push(...remote.findings);

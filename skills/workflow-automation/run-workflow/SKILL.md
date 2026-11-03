@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 22+ and network access to the New Relic NerdGraph API (api.newrelic.com, api.eu.newrelic.com, or api.jp.newrelic.com).
 metadata:
   family: workflow-automation
-  version: "0.3.1"
+  version: "0.5.0"
 ---
 
 # Run Workflow

@@ -118,3 +118,7 @@ Contributions are welcome. Please open an [issue](../../issues) or a pull reques
 ## License
 
 This project is distributed under the [Apache 2 license](LICENSE).
+
+### Third-party code
+
+[`shared/workflow-automation/js-yaml.mjs`](shared/workflow-automation/js-yaml.mjs) is a vendored, unmodified copy of [js-yaml](https://github.com/nodeca/js-yaml) 4.3.2, which is licensed under the MIT license. Its copyright and license notice stays in the header of that file and of each skill's generated copy (`skills/workflow-automation/*/scripts/lib/js-yaml.mjs`).

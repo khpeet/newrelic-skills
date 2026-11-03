@@ -65,7 +65,7 @@ How to add a skill, or a whole skill family, to this repository. Skills follow t
 
 1. Put code shared by the family's skills in `shared/<family>/`, import it from scripts as `./lib/<x>.mjs`, and run `npm run sync`. Sync copies into each skill only the `*.mjs` files its scripts import (transitively) and the `references/*.md` files its `SKILL.md` links to, and it never touches files without the GENERATED header. Never edit the generated copies. Shared code must itself be self-contained: it can import only other files in `shared/<family>/` and `node:` builtins.
 2. Add tests under `test/<family>/` (`node:test`, mocks for any network call). `npm test` picks up `test/**/*.test.mjs`.
-3. If the headless eval child needs to run the scripts, `evals/<family>/config.json` `bashAllow` must allow them (for example `node {plugin}/skills/*/scripts/*.mjs *`). A skill without scripts needs no `bashAllow` entry; it is optional and defaults to no Bash. If a skill needs another tool or environment variable, add that entry deliberately rather than loosening the glob. See [Adding a family](evals/README.md#adding-a-family).
+3. If the headless eval child needs to run the scripts, `evals/<family>/config.json` `bashAllow` must allow them, with one entry per script that names its exact path (for example `node {plugin}/skills/<family>/<skill>/scripts/<skill>.mjs *`; only the argument list is a wildcard). `loadFamilyConfig` and `buildAllowedTools` reject an entry with a `..` segment or a wildcard in the `{plugin}` path (`bashRuleProblem` in `tools/evals/claude.mjs`), so a glob such as `skills/*/scripts/*.mjs` is refused. A skill without scripts needs no `bashAllow` entry; it is optional and defaults to no Bash. If a skill needs another tool or environment variable, add that entry deliberately rather than loosening the rule. See [Adding a family](evals/README.md#adding-a-family).
 4. Add the family's own version of the script tests (see [Part D](#part-d-worked-example-workflow-automation)): they hard-code skills and subcommands for `workflow-automation`, so a new family copies and adapts them.
 
 ### Checklist
@@ -97,7 +97,7 @@ How to add a skill, or a whole skill family, to this repository. Skills follow t
 
 - `skills/workflow-automation/{fetch,validate,build,publish,run}-workflow/`, each with `SKILL.md`, `scripts/<skill>.mjs`, `references/`.
 - `shared/workflow-automation/`: `nerdgraph.mjs` (API client), `cli.mjs` (`printJson`, `reportError`, `exitCodeFor`, `runIfMain`, `assertCommandFirst`), `paths.mjs` (`skillDirOf`, `assertNotInSkillDir`), `yaml.mjs`, `validation.mjs`, and others.
-- `evals/workflow-automation/`: `config.json` with `bashAllow` of `node {plugin}/skills/*/scripts/*.mjs *` and `unsetEnv` of `NEW_RELIC_*`. The env allowlist is `ENV_ALLOWLIST` in `tools/evals/claude.mjs`.
+- `evals/workflow-automation/`: `config.json` with one exact-path `bashAllow` entry per skill script (`node {plugin}/skills/workflow-automation/<skill>/scripts/<skill>.mjs *`) and `unsetEnv` of `NEW_RELIC_*`. The env allowlist is `ENV_ALLOWLIST` in `tools/evals/claude.mjs`.
 - `test/workflow-automation/`: reference tests for scripts (below).
 
 ### Reference tests (hard-coded to this family)

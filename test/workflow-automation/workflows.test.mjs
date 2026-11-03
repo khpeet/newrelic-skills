@@ -83,3 +83,11 @@ test('normalizeNewlines: CRLF and lone CR become LF and trailing newlines are dr
   assert.equal(normalizeNewlines('a\r\nb\rc\n\n\n'), 'a\nb\nc');
   assert.equal(normalizeNewlines(''), '');
 });
+
+test('writeNoOverwrite creates files readable only by the owner (they may hold secrets)', { skip: process.platform === 'win32' }, async () => {
+  const { statSync } = await import('node:fs');
+  const dir = mkdtempSync(join(tmpdir(), 'wf-mode-'));
+  const path = join(dir, 'out', 'w.yaml');
+  writeNoOverwrite(path, 'name: x\n', false, dir);
+  assert.equal(statSync(path).mode & 0o777, 0o600);
+});
