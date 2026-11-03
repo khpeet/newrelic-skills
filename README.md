@@ -109,15 +109,7 @@ Known limitation: the `Update` mutation has no expected-version check on the ser
 
 ## Support
 
-Connect with us by [creating issues](../../issues) or [asking questions in the discussions section](../../discussions) of this repo.
-
-We also encourage you to bring your experiences and questions to the [Explorers Hub](https://discuss.newrelic.com) where our community members collaborate on solutions and new ideas.
-
 This project is provided AS-IS WITHOUT WARRANTY OR DEDICATED SUPPORT.
-
-## Reporting a vulnerability
-
-If you believe you have found a security vulnerability in this project, please report it through GitHub private vulnerability reporting: <https://github.com/khpeet/newrelic-skills/security/advisories/new>. Please do not open a public issue.
 
 ## Contributing
 
