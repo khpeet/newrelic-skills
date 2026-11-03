@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*
+.DS_Store
+.claude/
+CLAUDE.md
+tmp*
+
+# Workflow YAML fetched or drafted by the skills (may contain secrets), and eval run output.
+/workflows/
+/evals/workspace/

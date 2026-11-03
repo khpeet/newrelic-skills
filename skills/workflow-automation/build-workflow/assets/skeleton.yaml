@@ -1,0 +1,44 @@
+# Starting point: HTTP GET, branch on the outcome, log it. Rename it; confirm each action with `describe`.
+name: example_workflow
+description: Calls an HTTP endpoint and logs whether the call succeeded
+
+workflowInputs:
+  url:
+    type: String
+
+steps:
+  - name: callEndpoint
+    type: action
+    action: http.get
+    version: 1
+    ignoreErrors: true
+    inputs:
+      url: ${{ .workflowInputs.url }}
+      selectors:
+        - name: status
+          expression: .statusCode
+      headers: '{"Authorization": "Bearer ${{ :secrets:exampleApiToken }}"}'
+
+  - name: checkResult
+    type: switch
+    switch:
+      - condition: ${{ .steps.callEndpoint.outputs.success == true }}
+        next: logSuccess
+    next: logFailure
+
+  - name: logSuccess
+    type: action
+    action: newrelic.ingest.sendLogs
+    version: 1
+    inputs:
+      logs:
+        - message: "Call succeeded with status ${{ .steps.callEndpoint.outputs.status }}"
+    next: end
+
+  - name: logFailure
+    type: action
+    action: newrelic.ingest.sendLogs
+    version: 1
+    inputs:
+      logs:
+        - message: "Call failed: ${{ .steps.callEndpoint.outputs.errorMessage }}"

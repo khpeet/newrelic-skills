@@ -1,0 +1,13 @@
+{
+  "plugin": "nr-workflow-automation",
+  "install": ["workflow-automation"],
+  "unsetEnv": ["NEW_RELIC_*"],
+  "bashAllow": [
+    "node {plugin}/skills/workflow-automation/fetch-workflow/scripts/fetch-workflow.mjs *",
+    "node {plugin}/skills/workflow-automation/validate-workflow/scripts/validate-workflow.mjs *",
+    "node {plugin}/skills/workflow-automation/build-workflow/scripts/build-workflow.mjs *",
+    "node {plugin}/skills/workflow-automation/publish-workflow/scripts/publish-workflow.mjs *",
+    "node {plugin}/skills/workflow-automation/run-workflow/scripts/run-workflow.mjs *"
+  ],
+  "triggerFiles": ["fixtures/triggers/workflows/cpu_triage.yaml"]
+}

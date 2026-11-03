@@ -1,0 +1,20 @@
+{
+  "name": "newrelic-skills",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Community New Relic skills",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": "github:khpeet/newrelic-skills",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "sync": "node tools/sync-shared.mjs",
+    "sync:check": "node tools/sync-shared.mjs --check",
+    "docs:check": "node tools/docs-check.mjs",
+    "evals": "node tools/run-evals.mjs",
+    "evals:report": "node tools/evals/report.mjs"
+  }
+}

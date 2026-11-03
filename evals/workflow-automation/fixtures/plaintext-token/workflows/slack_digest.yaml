@@ -1,0 +1,23 @@
+name: slack_digest
+description: Posts the daily error digest to an internal webhook
+
+steps:
+  - name: queryErrorCount
+    type: action
+    action: newrelic.nrdb.query
+    version: 1
+    inputs:
+      query: "FROM TransactionError SELECT count(*) AS errors SINCE 1 day ago"
+      selectors:
+        - name: errors
+          expression: ".results[0].errors"
+
+  - name: postDigest
+    type: action
+    action: utils.http.post
+    version: 1
+    inputs:
+      url: https://digest.example.com/hooks/errors
+      headers:
+        Authorization: Bearer EXAMPLE_FAKE_TOKEN_DO_NOT_USE
+      body: '{"errors": "${{ .steps.queryErrorCount.outputs.errors }}"}'

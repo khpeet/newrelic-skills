@@ -1,0 +1,32 @@
+{
+  "name": "newrelic-skills",
+  "owner": {
+    "name": "khpeet",
+    "url": "https://github.com/khpeet"
+  },
+  "metadata": {
+    "description": "New Relic agent skills"
+  },
+  "plugins": [
+    {
+      "name": "nr-workflow-automation",
+      "source": "./",
+      "description": "List, build, validate, publish, and run New Relic Workflow Automation definitions",
+      "version": "0.4.0",
+      "author": {
+        "name": "khpeet",
+        "url": "https://github.com/khpeet"
+      },
+      "repository": "https://github.com/khpeet/newrelic-skills",
+      "license": "Apache-2.0",
+      "keywords": ["newrelic", "workflow-automation", "agent-skill"],
+      "skills": [
+        "./skills/workflow-automation/fetch-workflow",
+        "./skills/workflow-automation/validate-workflow",
+        "./skills/workflow-automation/build-workflow",
+        "./skills/workflow-automation/publish-workflow",
+        "./skills/workflow-automation/run-workflow"
+      ]
+    }
+  ]
+}

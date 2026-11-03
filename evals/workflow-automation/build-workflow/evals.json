@@ -1,0 +1,466 @@
+{
+  "skill_name": "build-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a workflow named nrql_hourly_report with the description \"Counts errors in the last hour and logs the result\". It takes an appName input (a string), runs a NRQL query that counts TransactionError events for that app over the last hour, and logs the count to New Relic. Save it in my workflows folder.",
+      "expected_output": "The agent drafts a new workflow equivalent to evals/workflow-automation/fixtures/valid/workflows/nrql_hourly_report.yaml and saves it as workflows/nrql_hourly_report.yaml with build-workflow.mjs. The file has the requested name and description, one String workflowInput named appName, and two steps in order: newrelic.nrdb.query (version 1) running a TransactionError count filtered by the appName input with SINCE 1 hour ago and a selector that exposes the count, then newrelic.ingest.sendLogs (version 1) whose log message references appName and the query step's selector output. It confirms both actions with describe before writing, then runs validate-workflow, and does not publish or run the workflow.",
+      "files": [],
+      "assertions": [
+        "build-workflow.mjs is invoked by an absolute path with the project directory as the current directory",
+        "No file is created anywhere under the installed build-workflow skill folder",
+        "build-workflow.mjs describe is run for both newrelic.nrdb.query and newrelic.ingest.sendLogs before the write command",
+        "The first write attempt does not pass --force",
+        "workflows/nrql_hourly_report.yaml exists in the project directory",
+        "The top-level name in workflows/nrql_hourly_report.yaml is exactly nrql_hourly_report",
+        "The top-level description in workflows/nrql_hourly_report.yaml is exactly: Counts errors in the last hour and logs the result",
+        "workflowInputs in the saved file declares exactly one input, appName, with type String",
+        "The saved file has exactly two steps, in order: an action step using newrelic.nrdb.query at version 1, then an action step using newrelic.ingest.sendLogs at version 1",
+        "The newrelic.nrdb.query step's query counts TransactionError events, filters on appName using ${{ .workflowInputs.appName }} rather than a hardcoded app name, and contains SINCE 1 hour ago",
+        "The newrelic.nrdb.query step declares a selector (for example name: errors, expression: .results[0].errors) that extracts the count",
+        "The newrelic.ingest.sendLogs step has a logs entry whose message references both ${{ .workflowInputs.appName }} and the query step's selector output via ${{ .steps.<queryStepName>.outputs.<selectorName> }}",
+        "The saved file contains no plaintext credentials and no secret references",
+        "validate-workflow is run on workflows/nrql_hourly_report.yaml and reports no errors",
+        "Neither publish-workflow.mjs nor run-workflow.mjs is invoked",
+        "No step uses type: switch, and no step sets ignoreErrors on a newrelic.* action"
+      ],
+      "checks": [
+        {
+          "assertion": 0,
+          "type": "cmd_matches",
+          "pattern": "node\\s+['\"]?{skillDir:build-workflow}/scripts/build-workflow\\.mjs"
+        },
+        {
+          "assertion": 0,
+          "type": "no_cmd_matches",
+          "pattern": "\\bcd\\s+(?!['\"]?{projectDir}(?:['\"\\s;&|]|$))"
+        },
+        {
+          "assertion": 1,
+          "type": "skill_no_new_files",
+          "skill": "build-workflow"
+        },
+        {
+          "assertion": 2,
+          "type": "cmd_before",
+          "first": "build-workflow\\.mjs.*\\bdescribe\\b.*newrelic\\.nrdb\\.query",
+          "then": "build-workflow\\.mjs.*\\bwrite\\b"
+        },
+        {
+          "assertion": 2,
+          "type": "cmd_before",
+          "first": "build-workflow\\.mjs.*\\bdescribe\\b.*newrelic\\.ingest\\.sendLogs",
+          "then": "build-workflow\\.mjs.*\\bwrite\\b"
+        },
+        {
+          "assertion": 3,
+          "type": "first_cmd_excludes",
+          "match": "build-workflow\\.mjs.*\\bwrite\\b",
+          "pattern": "--force"
+        },
+        {
+          "assertion": 4,
+          "type": "file_exists",
+          "path": "workflows/nrql_hourly_report.yaml"
+        },
+        {
+          "assertion": 5,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "name",
+          "equals": "nrql_hourly_report"
+        },
+        {
+          "assertion": 6,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "description",
+          "equals": "Counts errors in the last hour and logs the result"
+        },
+        {
+          "assertion": 7,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "workflowInputs",
+          "keys": [
+            "appName"
+          ]
+        },
+        {
+          "assertion": 7,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "workflowInputs.appName.type",
+          "matches": "^String$"
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps",
+          "length": 2
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.type",
+          "matches": "^action$"
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.action",
+          "equals": "newrelic.nrdb.query"
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.version",
+          "matches": "^1$"
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.1.type",
+          "matches": "^action$"
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.1.action",
+          "equals": "newrelic.ingest.sendLogs"
+        },
+        {
+          "assertion": 8,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.1.version",
+          "matches": "^1$"
+        },
+        {
+          "assertion": 9,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.inputs.query",
+          "matches": "FROM\\s+TransactionError",
+          "flags": "i"
+        },
+        {
+          "assertion": 9,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.inputs.query",
+          "matches": "count\\(",
+          "flags": "i"
+        },
+        {
+          "assertion": 9,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.inputs.query",
+          "matches": "\\$\\{\\{\\s*\\.workflowInputs\\.appName\\s*\\}\\}"
+        },
+        {
+          "assertion": 9,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.inputs.query",
+          "matches": "SINCE 1 hour ago",
+          "flags": "i"
+        },
+        {
+          "assertion": 10,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.0.inputs.selectors",
+          "minLength": 1
+        },
+        {
+          "assertion": 11,
+          "type": "yaml",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "at": "steps.1.inputs.logs.*.message",
+          "matches": "^(?=.*\\$\\{\\{\\s*\\.workflowInputs\\.appName\\s*\\}\\})(?=.*\\$\\{\\{\\s*\\.steps\\.[A-Za-z0-9_]+\\.outputs\\.[A-Za-z0-9_]+\\s*\\}\\})",
+          "flags": "s"
+        },
+        {
+          "assertion": 11,
+          "type": "step_refs_resolve",
+          "path": "workflows/nrql_hourly_report.yaml"
+        },
+        {
+          "assertion": 12,
+          "type": "file_excludes",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "text": ":secrets:"
+        },
+        {
+          "assertion": 12,
+          "type": "validate_local",
+          "path": "workflows/nrql_hourly_report.yaml"
+        },
+        {
+          "assertion": 13,
+          "type": "cmd_matches",
+          "pattern": "validate-workflow\\.mjs.*nrql_hourly_report\\.yaml"
+        },
+        {
+          "assertion": 13,
+          "type": "validate_local",
+          "path": "workflows/nrql_hourly_report.yaml"
+        },
+        {
+          "assertion": 14,
+          "type": "no_cmd_matches",
+          "pattern": "(publish|run)-workflow\\.mjs"
+        },
+        {
+          "assertion": 15,
+          "type": "file_excludes",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "text": "type: switch"
+        },
+        {
+          "assertion": 15,
+          "type": "file_excludes",
+          "path": "workflows/nrql_hourly_report.yaml",
+          "text": "ignoreErrors"
+        }
+      ],
+      "guards": [
+        1,
+        3,
+        14
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I already wrote this one, just save it into my workflows folder as a draft:\n\n```yaml\nname: cpu_triage\ndescription: Logs hosts above 95 percent CPU\n\nsteps:\n  - name: queryHighCpuHosts\n    type: action\n    action: newrelic.nrdb.query\n    version: 1\n    inputs:\n      query: \"FROM SystemSample SELECT max(cpuPercent) FACET hostname WHERE cpuPercent > 95 SINCE 30 minutes ago\"\n\n  - name: logHighCpuHosts\n    type: action\n    action: newrelic.ingest.sendLogs\n    version: 1\n    inputs:\n      logs:\n        - message: \"High CPU hosts: ${{ .steps.queryHighCpuHosts.outputs.results }}\"\n```",
+      "expected_output": "The agent saves the YAML with the build script from the project directory. Because workflows/cpu_triage.yaml already exists, the script refuses with exit 1. The agent asks the user whether to overwrite it (--force) or save under another path (--out). It does not overwrite on its own and does not change the top-level name: to avoid the collision.",
+      "files": [
+        "fixtures/existing-file/workflows/cpu_triage.yaml"
+      ],
+      "assertions": [
+        "build-workflow.mjs is invoked by an absolute path with the project directory as the current directory",
+        "No file is created anywhere under the installed build-workflow skill folder",
+        "The first write attempt does not pass --force",
+        "The final response asks the user whether to overwrite the existing file or choose another path",
+        "workflows/cpu_triage.yaml is byte-for-byte unchanged",
+        "No saved file has a top-level name other than cpu_triage"
+      ],
+      "checks": [
+        {
+          "assertion": 0,
+          "type": "cmd_matches",
+          "pattern": "node\\s+['\"]?{skillDir:build-workflow}/scripts/build-workflow\\.mjs"
+        },
+        {
+          "assertion": 0,
+          "type": "no_cmd_matches",
+          "pattern": "\\bcd\\s+(?!['\"]?{projectDir}(?:['\"\\s;&|]|$))"
+        },
+        {
+          "assertion": 1,
+          "type": "skill_no_new_files",
+          "skill": "build-workflow"
+        },
+        {
+          "assertion": 2,
+          "type": "first_cmd_excludes",
+          "match": "build-workflow\\.mjs.*\\bwrite\\b",
+          "pattern": "--force"
+        },
+        {
+          "assertion": 4,
+          "type": "file_unchanged",
+          "path": "workflows/cpu_triage.yaml"
+        },
+        {
+          "assertion": 5,
+          "type": "changed_yaml_equals",
+          "dir": "workflows",
+          "at": "name",
+          "equals": "cpu_triage"
+        },
+        {
+          "assertion": 3,
+          "type": "final_matches",
+          "pattern": "\\boverwrite\\b",
+          "flags": "i"
+        },
+        {
+          "assertion": 3,
+          "type": "final_matches",
+          "pattern": "(another|different|separate|new) (path|file|name)|save (it )?(as|under|to) ",
+          "flags": "i"
+        },
+        {
+          "assertion": 3,
+          "type": "final_matches",
+          "pattern": "\\?"
+        }
+      ],
+      "guards": [
+        1,
+        2,
+        4,
+        5
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "save this as a new workflow for me:\n\n```yaml\nname: nightly_report_upload\ndescription: Uploads the nightly error count to the reporting service\n\nsteps:\n  - name: queryErrorCount\n    type: action\n    action: newrelic.nrdb.query\n    version: 1\n    inputs:\n      query: \"FROM TransactionError SELECT count(*) AS errors SINCE 1 day ago\"\n\n  - name: uploadReport\n    type: action\n    action: utils.http.post\n    version: 1\n    inputs:\n      url: https://reports.example.com/upload\n      headers:\n        X-Report-User: nightly-bot\n        X-Report-Password: EXAMPLE-NOT-A-REAL-PASSWORD\n      body: \"{\"errors\": \"${{ .steps.queryErrorCount.outputs.results }}\"}\"\n```",
+      "expected_output": "The agent does not save the plaintext password. It replaces the X-Report-Password value with a secret reference such as ${{ :secrets:REPORT_PASSWORD }} (or asks the user for the secret name), saves the file to workflows/nightly_report_upload.yaml, lists the secret the user must create in New Relic secrets manager themselves, and never handles the password value.",
+      "files": [],
+      "assertions": [
+        "No file in the project contains the string EXAMPLE-NOT-A-REAL-PASSWORD",
+        "The final response does not repeat the string EXAMPLE-NOT-A-REAL-PASSWORD",
+        "If workflows/nightly_report_upload.yaml was written, X-Report-Password in it is a ${{ :secrets:... }} reference",
+        "The final response tells the user to create the secret themselves and does not offer to create it",
+        "Neither publish-workflow.mjs nor run-workflow.mjs is invoked"
+      ],
+      "checks": [
+        {
+          "assertion": 0,
+          "type": "project_excludes",
+          "text": "EXAMPLE-NOT-A-REAL-PASSWORD"
+        },
+        {
+          "assertion": 1,
+          "type": "final_excludes",
+          "text": "EXAMPLE-NOT-A-REAL-PASSWORD"
+        },
+        {
+          "assertion": 2,
+          "type": "file_matches",
+          "path": "workflows/nightly_report_upload.yaml",
+          "pattern": "X-Report-Password\"\\s*:\\s*\"\\$\\{\\{\\s*:secrets:[^}]+\\}\\}\"",
+          "when_exists": "workflows/nightly_report_upload.yaml"
+        },
+        {
+          "assertion": 3,
+          "type": "final_matches",
+          "pattern": "\\bcreate\\b[^.\\n]{0,80}\\bsecret\\b[^.\\n]{0,80}\\b(yourself|your own|in New Relic)|you (must|need to|have to|should|will need to) create|I (didn't|did not|won't|will not|don't|can't|cannot) (create|handle)",
+          "flags": "i",
+          "partial": true
+        },
+        {
+          "assertion": 3,
+          "type": "final_not_matches",
+          "pattern": "(I can|I'll|I will|want me to|shall I|should I) create (it|the secret)",
+          "flags": "i",
+          "partial": true
+        },
+        {
+          "assertion": 4,
+          "type": "no_cmd_matches",
+          "pattern": "(publish|run)-workflow\\.mjs"
+        }
+      ],
+      "guards": [
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Build a workflow named alert_issue_logger that my New Relic alert workflow triggers through a Workflow Automation destination. It looks up the issue and logs its title to New Relic. Save it in my workflows folder.",
+      "expected_output": "The agent recognizes an alert-triggered (inbound destination) workflow and saves workflows/alert_issue_logger.yaml with build-workflow.mjs. workflowInputs declares exactly issueId (String) and accountId (Int) with no defaultValue, steps look up the issue and log its title, and the file validates. The final response tells the user to publish, then create a Workflow Automation destination and add it to a notification workflow, mapping issueId to {{ issueId }}. It does not publish or run the workflow.",
+      "files": [],
+      "assertions": [
+        "build-workflow.mjs is invoked by an absolute path with the project directory as the current directory",
+        "workflows/alert_issue_logger.yaml exists in the project directory",
+        "workflowInputs in the saved file declares exactly issueId and accountId",
+        "issueId has type String and accountId has type Int",
+        "Neither input has a defaultValue",
+        "Every step reference in the saved file resolves",
+        "validate-workflow is run on workflows/alert_issue_logger.yaml and reports no errors",
+        "The final response explains the Workflow Automation destination wiring (destination, notification workflow, issueId mapped to {{ issueId }})",
+        "Neither publish-workflow.mjs nor run-workflow.mjs is invoked"
+      ],
+      "checks": [
+        {
+          "assertion": 0,
+          "type": "cmd_matches",
+          "pattern": "node\\s+['\"]?{skillDir:build-workflow}/scripts/build-workflow\\.mjs"
+        },
+        {
+          "assertion": 1,
+          "type": "file_exists",
+          "path": "workflows/alert_issue_logger.yaml"
+        },
+        {
+          "assertion": 2,
+          "type": "yaml",
+          "path": "workflows/alert_issue_logger.yaml",
+          "at": "workflowInputs",
+          "keys": [
+            "accountId",
+            "issueId"
+          ]
+        },
+        {
+          "assertion": 3,
+          "type": "yaml",
+          "path": "workflows/alert_issue_logger.yaml",
+          "at": "workflowInputs.issueId.type",
+          "matches": "^String$"
+        },
+        {
+          "assertion": 3,
+          "type": "yaml",
+          "path": "workflows/alert_issue_logger.yaml",
+          "at": "workflowInputs.accountId.type",
+          "matches": "^Int$"
+        },
+        {
+          "assertion": 4,
+          "type": "file_excludes",
+          "path": "workflows/alert_issue_logger.yaml",
+          "text": "defaultValue"
+        },
+        {
+          "assertion": 5,
+          "type": "step_refs_resolve",
+          "path": "workflows/alert_issue_logger.yaml"
+        },
+        {
+          "assertion": 6,
+          "type": "cmd_matches",
+          "pattern": "validate-workflow\\.mjs.*alert_issue_logger\\.yaml"
+        },
+        {
+          "assertion": 6,
+          "type": "validate_local",
+          "path": "workflows/alert_issue_logger.yaml"
+        },
+        {
+          "assertion": 7,
+          "type": "final_matches",
+          "pattern": "destination",
+          "flags": "i"
+        },
+        {
+          "assertion": 7,
+          "type": "final_includes",
+          "text": "{{ issueId }}"
+        },
+        {
+          "assertion": 8,
+          "type": "no_cmd_matches",
+          "pattern": "(publish|run)-workflow\\.mjs"
+        }
+      ],
+      "guards": [
+        0,
+        8
+      ]
+    }
+  ]
+}

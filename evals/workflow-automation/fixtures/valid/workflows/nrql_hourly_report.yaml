@@ -1,0 +1,25 @@
+name: nrql_hourly_report
+description: Counts errors in the last hour and logs the result
+
+workflowInputs:
+  appName:
+    type: String
+
+steps:
+  - name: queryErrorCount
+    type: action
+    action: newrelic.nrdb.query
+    version: 1
+    inputs:
+      query: "FROM TransactionError SELECT count(*) AS errors WHERE appName = '${{ .workflowInputs.appName }}' SINCE 1 hour ago"
+      selectors:
+        - name: errors
+          expression: ".results[0].errors"
+
+  - name: logErrorCount
+    type: action
+    action: newrelic.ingest.sendLogs
+    version: 1
+    inputs:
+      logs:
+        - message: "Hourly error count for ${{ .workflowInputs.appName }}: ${{ .steps.queryErrorCount.outputs.errors }}"

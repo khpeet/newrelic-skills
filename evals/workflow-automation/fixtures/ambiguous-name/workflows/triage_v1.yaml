@@ -1,0 +1,18 @@
+name: cpu_triage
+description: Logs high CPU hosts draft 1
+
+steps:
+  - name: queryHighCpuHosts
+    type: action
+    action: newrelic.nrdb.query
+    version: 1
+    inputs:
+      query: "FROM SystemSample SELECT max(cpuPercent) FACET hostname WHERE cpuPercent > 90 SINCE 30 minutes ago"
+
+  - name: logHighCpuHosts
+    type: action
+    action: newrelic.ingest.sendLogs
+    version: 1
+    inputs:
+      logs:
+        - message: "High CPU hosts: ${{ .steps.queryHighCpuHosts.outputs.results }}"

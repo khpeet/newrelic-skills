@@ -1,0 +1,412 @@
+{
+  "fetch-workflow": [
+    {
+      "query": "grab the latest version of our ec2_rightsizing workflow from account 1234567 so I can tweak it",
+      "should_trigger": true
+    },
+    {
+      "query": "what workflow automations exist in our prod NR account?",
+      "should_trigger": true
+    },
+    {
+      "query": "pull v3 of incident_triage, I want to compare it with v4",
+      "should_trigger": true
+    },
+    {
+      "query": "can you export all the yaml for the workflow called nightly_cleanup into my repo",
+      "should_trigger": true
+    },
+    {
+      "query": "list workflows in new relic acct 7654321",
+      "should_trigger": true
+    },
+    {
+      "query": "I need a local copy of the disk_space_remediation automation before I change anything",
+      "should_trigger": true
+    },
+    {
+      "query": "back up our New Relic workflow automation definitions, starting with slack_digest",
+      "should_trigger": true
+    },
+    {
+      "query": "download wf \"cpu_triage\" version 2 to ./workflows/cpu_triage_v2.yaml",
+      "should_trigger": true
+    },
+    {
+      "query": "which versions of the alert_enrichment workflow automation have been published?",
+      "should_trigger": true
+    },
+    {
+      "query": "fetch the published definition of kafka_lag_check so we can validate it",
+      "should_trigger": true
+    },
+    {
+      "query": "list my New Relic alert workflows and their notification channels",
+      "should_trigger": false
+    },
+    {
+      "query": "download the GitHub Actions workflow logs for the last failed build",
+      "should_trigger": false
+    },
+    {
+      "query": "did run 8f2c1a77-3b1e-4d2a-9c55-1e2f3a4b5c6d finish?",
+      "should_trigger": false
+    },
+    {
+      "query": "show me the steps in workflows/cpu_triage.yaml and check whether it is valid",
+      "should_trigger": false
+    },
+    {
+      "query": "publish my local copy of incident_triage back to New Relic",
+      "should_trigger": false
+    },
+    {
+      "query": "create a workflow that posts to #ops when an EC2 instance goes over 90% CPU",
+      "should_trigger": false
+    },
+    {
+      "query": "git pull the latest changes from the workflows repo",
+      "should_trigger": false
+    },
+    {
+      "query": "export my New Relic dashboard as JSON",
+      "should_trigger": false
+    },
+    {
+      "query": "fetch the last 100 log lines for the checkout service from New Relic",
+      "should_trigger": false
+    },
+    {
+      "query": "copy .github/workflows/deploy.yml into the new repo",
+      "should_trigger": false
+    }
+  ],
+  "validate-workflow": [
+    {
+      "query": "is ./workflows/slack_alert_digest.yaml ok? publish keeps saying Invalid workflow definition format",
+      "should_trigger": true
+    },
+    {
+      "query": "lint my nr workflow, i think i hardcoded a slack token somewhere",
+      "should_trigger": true
+    },
+    {
+      "query": "review this workflow automation draft before I push it to New Relic",
+      "should_trigger": true
+    },
+    {
+      "query": "can you test workflows/nrql_hourly_report.yaml before I publish it?",
+      "should_trigger": true
+    },
+    {
+      "query": "check cpu_triage.yaml against the workflow automation schema and limits",
+      "should_trigger": true
+    },
+    {
+      "query": "my workflow automation fails server validation, can you debug why? file is workflows/aws_cleanup.yaml",
+      "should_trigger": true
+    },
+    {
+      "query": "is the ${{ :secrets: }} syntax right in my new relic workflow yaml?",
+      "should_trigger": true
+    },
+    {
+      "query": "sanity check the workflow I just fetched before I edit it",
+      "should_trigger": true
+    },
+    {
+      "query": "validate incident_triage locally only, no API key on this machine",
+      "should_trigger": true
+    },
+    {
+      "query": "does this workflow automation follow New Relic best practices for approval gates?",
+      "should_trigger": true
+    },
+    {
+      "query": "validate .github/workflows/ci.yml",
+      "should_trigger": false
+    },
+    {
+      "query": "publish my workflow to account 1234567",
+      "should_trigger": false
+    },
+    {
+      "query": "check that my alert workflow sends critical issues to PagerDuty",
+      "should_trigger": false
+    },
+    {
+      "query": "lint my kubernetes deployment.yaml",
+      "should_trigger": false
+    },
+    {
+      "query": "run cpu_triage now with threshold=95",
+      "should_trigger": false
+    },
+    {
+      "query": "write a workflow automation that restarts a host when CPU is high",
+      "should_trigger": false
+    },
+    {
+      "query": "is my docker-compose.yml valid?",
+      "should_trigger": false
+    },
+    {
+      "query": "validate this NRQL query: SELECT count(*) FROM Transaction SINCE 1 hour ago",
+      "should_trigger": false
+    },
+    {
+      "query": "test my alert condition thresholds in New Relic",
+      "should_trigger": false
+    },
+    {
+      "query": "review my Terraform for New Relic alert policies",
+      "should_trigger": false
+    }
+  ],
+  "build-workflow": [
+    {
+      "query": "when CPU on prod-web goes over 90% I want New Relic to post to #ops and wait for approval before rebooting the EC2 box",
+      "should_trigger": true
+    },
+    {
+      "query": "make an nr automation that runs an NRQL error count every hour and logs it",
+      "should_trigger": true
+    },
+    {
+      "query": "which action posts to Teams in workflow automation?",
+      "should_trigger": true
+    },
+    {
+      "query": "build a workflow automation my alert workflow can call as a destination to enrich the issue and post it to Slack",
+      "should_trigger": true
+    },
+    {
+      "query": "add a Slack notification step to workflows/cpu_triage.yaml",
+      "should_trigger": true
+    },
+    {
+      "query": "when an alert issue opens, have New Relic run an automation that pulls the issue details and creates a Jira ticket",
+      "should_trigger": true
+    },
+    {
+      "query": "I want to automate rotating our stale AWS EC2 instances, with a human approval step, in New Relic",
+      "should_trigger": true
+    },
+    {
+      "query": "modify the incident_triage workflow so it also pages the on-call engineer",
+      "should_trigger": true
+    },
+    {
+      "query": "create a workflow template that calls our internal HTTP API and logs failures",
+      "should_trigger": true
+    },
+    {
+      "query": "turn this runbook into a new relic workflow automation: check disk usage, alert if over 85%",
+      "should_trigger": true
+    },
+    {
+      "query": "create an alert workflow that routes critical issues to PagerDuty",
+      "should_trigger": false
+    },
+    {
+      "query": "write a GitHub Actions workflow to run npm test on every push",
+      "should_trigger": false
+    },
+    {
+      "query": "publish ./workflows/cpu_triage.yaml",
+      "should_trigger": false
+    },
+    {
+      "query": "run the cpu_triage workflow with threshold=95",
+      "should_trigger": false
+    },
+    {
+      "query": "build an n8n flow that posts new Stripe charges to Slack",
+      "should_trigger": false
+    },
+    {
+      "query": "is workflows/cpu_triage.yaml valid?",
+      "should_trigger": false
+    },
+    {
+      "query": "download the incident_triage workflow from New Relic",
+      "should_trigger": false
+    },
+    {
+      "query": "create a New Relic alert condition for CPU over 90%",
+      "should_trigger": false
+    },
+    {
+      "query": "set up a Zapier zap that emails me when a form is submitted",
+      "should_trigger": false
+    },
+    {
+      "query": "write a bash script that restarts nginx when it crashes",
+      "should_trigger": false
+    }
+  ],
+  "publish-workflow": [
+    {
+      "query": "ship my edits to incident_triage",
+      "should_trigger": true
+    },
+    {
+      "query": "push ./workflows/cpu_triage.yaml to account 1234567",
+      "should_trigger": true
+    },
+    {
+      "query": "deploy the workflow we just built",
+      "should_trigger": true
+    },
+    {
+      "query": "upload this workflow automation to New Relic as a new version",
+      "should_trigger": true
+    },
+    {
+      "query": "release v2 of our slack_digest automation",
+      "should_trigger": true
+    },
+    {
+      "query": "publish workflows/aws_cleanup.yaml, it passed validation",
+      "should_trigger": true
+    },
+    {
+      "query": "get my local nrql_hourly_report changes live in New Relic",
+      "should_trigger": true
+    },
+    {
+      "query": "create the disk_space_remediation workflow in our prod account from the yaml file",
+      "should_trigger": true
+    },
+    {
+      "query": "update the published kafka_lag_check workflow with my local file",
+      "should_trigger": true
+    },
+    {
+      "query": "what would change if I published workflows/incident_triage.yaml?",
+      "should_trigger": true
+    },
+    {
+      "query": "create a workflow that posts to Slack",
+      "should_trigger": false
+    },
+    {
+      "query": "run cpu_triage now",
+      "should_trigger": false
+    },
+    {
+      "query": "deploy my app with the GitHub Actions deploy workflow",
+      "should_trigger": false
+    },
+    {
+      "query": "publish my New Relic dashboard to the team",
+      "should_trigger": false
+    },
+    {
+      "query": "check whether workflows/incident_triage.yaml is valid before anything else",
+      "should_trigger": false
+    },
+    {
+      "query": "download the latest incident_triage from New Relic",
+      "should_trigger": false
+    },
+    {
+      "query": "publish a new version of our npm package",
+      "should_trigger": false
+    },
+    {
+      "query": "push my branch to origin",
+      "should_trigger": false
+    },
+    {
+      "query": "update my alert workflow so it notifies the #sre channel",
+      "should_trigger": false
+    },
+    {
+      "query": "add an approval step to workflows/cpu_triage.yaml",
+      "should_trigger": false
+    }
+  ],
+  "run-workflow": [
+    {
+      "query": "kick off cpu_triage with threshold=95 and channel=#ops",
+      "should_trigger": true
+    },
+    {
+      "query": "run v2 of incident_triage, not latest",
+      "should_trigger": true
+    },
+    {
+      "query": "did run 3fa1c2d4-5b6e-4f70-8a9b-0c1d2e3f4a5b complete?",
+      "should_trigger": true
+    },
+    {
+      "query": "trigger the nightly_cleanup workflow automation in account 1234567",
+      "should_trigger": true
+    },
+    {
+      "query": "execute slack_digest now, appName is checkout-service",
+      "should_trigger": true
+    },
+    {
+      "query": "start a run of disk_space_remediation and give me the log link",
+      "should_trigger": true
+    },
+    {
+      "query": "invoke our New Relic workflow aws_cleanup for region us-east-1",
+      "should_trigger": true
+    },
+    {
+      "query": "what is the status of my last workflow run 9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a?",
+      "should_trigger": true
+    },
+    {
+      "query": "fire off the kafka_lag_check automation once",
+      "should_trigger": true
+    },
+    {
+      "query": "run the workflow I just published",
+      "should_trigger": true
+    },
+    {
+      "query": "test my workflow yaml before I publish",
+      "should_trigger": false
+    },
+    {
+      "query": "re-run the failed GitHub Actions job",
+      "should_trigger": false
+    },
+    {
+      "query": "trigger a test notification on my alert workflow",
+      "should_trigger": false
+    },
+    {
+      "query": "run npm test",
+      "should_trigger": false
+    },
+    {
+      "query": "validate and dry-run workflows/cpu_triage.yaml",
+      "should_trigger": false
+    },
+    {
+      "query": "publish cpu_triage and then I will run it from the UI myself",
+      "should_trigger": false
+    },
+    {
+      "query": "run this NRQL query: SELECT count(*) FROM Transaction",
+      "should_trigger": false
+    },
+    {
+      "query": "list the workflow automations in my account",
+      "should_trigger": false
+    },
+    {
+      "query": "start my local dev server",
+      "should_trigger": false
+    },
+    {
+      "query": "run a synthetic monitor check in New Relic",
+      "should_trigger": false
+    }
+  ]
+}
