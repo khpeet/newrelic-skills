@@ -461,6 +461,169 @@
         0,
         8
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "Create a workflow named daily_error_csv_email with the description \"Emails the top error messages of the last day as a CSV\". It takes a destinationId input (a string) for the New Relic email destination. Every run it emails that destination a CSV of the 20 most frequent ERROR log messages from the last day. Save it in my workflows folder.",
+      "expected_output": "The agent describes newrelic.notification.sendEmail, then saves workflows/daily_error_csv_email.yaml with one sendEmail step whose inputs use destinationId from the workflow input and an attachments entry of type QUERY with format CSV and a .csv filename, so no jq is needed to build the report. It runs validate-workflow and does not publish or run the workflow.",
+      "files": [],
+      "assertions": [
+        "build-workflow.mjs describe is run for newrelic.notification.sendEmail before the write command",
+        "workflows/daily_error_csv_email.yaml exists in the project directory",
+        "The saved file uses the newrelic.notification.sendEmail action",
+        "The sendEmail step has an attachments entry with type QUERY and format CSV",
+        "The attachment query selects ERROR log messages with SINCE 1 day ago and a LIMIT of 20",
+        "The attachment filename ends in .csv",
+        "The sendEmail destinationId references ${{ .workflowInputs.destinationId }}",
+        "validate-workflow is run on the saved file and reports no errors",
+        "Neither publish-workflow.mjs nor run-workflow.mjs is invoked"
+      ],
+      "checks": [
+        {
+          "assertion": 0,
+          "type": "cmd_before",
+          "first": "build-workflow\\.mjs.*\\bdescribe\\b.*newrelic\\.notification\\.sendEmail",
+          "then": "build-workflow\\.mjs.*\\bwrite\\b"
+        },
+        {
+          "assertion": 1,
+          "type": "file_exists",
+          "path": "workflows/daily_error_csv_email.yaml"
+        },
+        {
+          "assertion": 2,
+          "type": "file_matches",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "pattern": "action:\\s*newrelic\\.notification\\.sendEmail"
+        },
+        {
+          "assertion": 3,
+          "type": "yaml",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "at": "steps.*.inputs.attachments.*.type",
+          "equals": "QUERY"
+        },
+        {
+          "assertion": 3,
+          "type": "yaml",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "at": "steps.*.inputs.attachments.*.format",
+          "equals": "CSV"
+        },
+        {
+          "assertion": 4,
+          "type": "yaml",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "at": "steps.*.inputs.attachments.*.query",
+          "matches": "SINCE 1 day ago",
+          "flags": "i"
+        },
+        {
+          "assertion": 4,
+          "type": "yaml",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "at": "steps.*.inputs.attachments.*.query",
+          "matches": "LIMIT 20",
+          "flags": "i"
+        },
+        {
+          "assertion": 5,
+          "type": "yaml",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "at": "steps.*.inputs.attachments.*.filename",
+          "matches": "\\.csv$"
+        },
+        {
+          "assertion": 6,
+          "type": "yaml",
+          "path": "workflows/daily_error_csv_email.yaml",
+          "at": "steps.*.inputs.destinationId",
+          "matches": "\\$\\{\\{\\s*\\.workflowInputs\\.destinationId\\s*\\}\\}"
+        },
+        {
+          "assertion": 7,
+          "type": "cmd_matches",
+          "pattern": "validate-workflow\\.mjs.*daily_error_csv_email\\.yaml"
+        },
+        {
+          "assertion": 7,
+          "type": "validate_local",
+          "path": "workflows/daily_error_csv_email.yaml"
+        },
+        {
+          "assertion": 8,
+          "type": "no_cmd_matches",
+          "pattern": "(publish|run)-workflow\\.mjs"
+        }
+      ],
+      "guards": [
+        8
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Create a workflow named new_entity_email with the description \"Emails entities first indexed in the last hour\". It takes a destinationId input (a string). It uses newrelic.nerdgraph.execute to run an entitySearch for APM applications whose firstIndexedAt is newer than one hour ago, then emails destinationId one CSV attachment listing each entity guid, name and first indexed time in UTC. Save it in my workflows folder.",
+      "expected_output": "The agent saves workflows/new_entity_email.yaml. The data does not come from NRQL, so the email uses a RAW attachment (or toCSV output) with CSV content. The workflow avoids the jq builtins the engine lacks (no strftime, no todate); any per-row date uses todateiso8601 (on epoch seconds, or on epoch milliseconds / 1000 | floor, or on sliced digits) or utils.datetime.fromEpoch. It validates the file and does not publish or run it.",
+      "files": [],
+      "assertions": [
+        "workflows/new_entity_email.yaml exists in the project directory",
+        "The saved file has an attachments entry of type RAW with a .csv filename",
+        "The saved file does not use strftime",
+        "The saved file builds the UTC time with todateiso8601 (on sliced digits or after / 1000 | floor) or with utils.datetime.fromEpoch",
+        "validate-workflow is run on the saved file and reports no errors",
+        "Neither publish-workflow.mjs nor run-workflow.mjs is invoked"
+      ],
+      "checks": [
+        {
+          "assertion": 0,
+          "type": "file_exists",
+          "path": "workflows/new_entity_email.yaml"
+        },
+        {
+          "assertion": 1,
+          "type": "yaml",
+          "path": "workflows/new_entity_email.yaml",
+          "at": "steps.*.inputs.attachments.*.type",
+          "equals": "RAW"
+        },
+        {
+          "assertion": 1,
+          "type": "yaml",
+          "path": "workflows/new_entity_email.yaml",
+          "at": "steps.*.inputs.attachments.*.filename",
+          "matches": "\\.csv$"
+        },
+        {
+          "assertion": 2,
+          "type": "file_excludes",
+          "path": "workflows/new_entity_email.yaml",
+          "text": "strftime"
+        },
+        {
+          "assertion": 3,
+          "type": "file_matches",
+          "path": "workflows/new_entity_email.yaml",
+          "pattern": "\\.\\[0:10\\]\\s*\\|\\s*tonumber\\s*\\|\\s*todateiso8601|/\\s*1000\\s*\\|\\s*floor\\s*\\|\\s*todateiso8601|utils\\.datetime\\.fromEpoch"
+        },
+        {
+          "assertion": 4,
+          "type": "cmd_matches",
+          "pattern": "validate-workflow\\.mjs.*new_entity_email\\.yaml"
+        },
+        {
+          "assertion": 4,
+          "type": "validate_local",
+          "path": "workflows/new_entity_email.yaml"
+        },
+        {
+          "assertion": 5,
+          "type": "no_cmd_matches",
+          "pattern": "(publish|run)-workflow\\.mjs"
+        }
+      ],
+      "guards": [
+        5
+      ]
     }
   ]
 }

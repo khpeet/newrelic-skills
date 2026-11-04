@@ -35,7 +35,7 @@ off to `validate-workflow`.
 
 ```bash
 npm run evals -- --family workflow-automation --dry-run                          # see what would run
-npm run evals -- --family workflow-automation                                    # all 17 cases
+npm run evals -- --family workflow-automation                                    # all 19 cases
 npm run evals -- --skill publish-workflow                                        # one skill
 npm run evals -- --skill build-workflow --case 1 --baseline                      # one case, with and without the skills
 ```
