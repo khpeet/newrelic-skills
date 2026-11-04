@@ -18,7 +18,7 @@ import { parseYaml } from './lib/yaml.mjs';
 const SKILL_DIR = skillDirOf(import.meta.url);
 // Identifies this skill in the User-Agent of every NerdGraph request. Keep version equal to SKILL.md metadata.version
 // (test/workflow-automation/client-version.test.mjs checks it).
-export const CLIENT = { skill: 'build-workflow', version: '0.5.0' };
+export const CLIENT = { skill: 'build-workflow', version: '0.6.0' };
 
 const USAGE = `Usage: node build-workflow.mjs <command> [options]
 
@@ -282,9 +282,11 @@ function mergeFields(liveFields = [], docFields = [], { input }) {
     return field;
   });
   for (const d of docsByName.values()) {
-    // Nested docs-only rows (e.g. attachment.filename) document sub-fields of live inputs. The live catalog
-    // omits the common success/errorMessage outputs that the docs list, so docs-only outputs are kept too.
-    if (!input || merged.some((f) => d.name.startsWith(`${f.name}.`))) merged.push({ ...d, docsOnly: true });
+    // Nested docs-only rows (e.g. attachment.filename) document sub-fields of live inputs. A plural live list
+    // (attachments) is documented by singular rows (attachment.type), so its singular prefix counts too. The live
+    // catalog omits the common success/errorMessage outputs that the docs list, so docs-only outputs are kept too.
+    const documents = (f) => d.name.startsWith(`${f.name}.`) || (f.name.endsWith('s') && d.name.startsWith(`${f.name.slice(0, -1)}.`));
+    if (!input || merged.some(documents)) merged.push({ ...d, docsOnly: true });
   }
   return merged;
 }

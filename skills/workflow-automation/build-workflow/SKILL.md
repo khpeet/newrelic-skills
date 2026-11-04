@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 22+ and network access to docs.newrelic.com. The live action catalog needs network access to the New Relic NerdGraph API (api.newrelic.com, api.eu.newrelic.com, or api.jp.newrelic.com); without credentials the skill uses the docs catalog only.
 metadata:
   family: workflow-automation
-  version: "0.5.0"
+  version: "0.6.0"
 ---
 
 # Build Workflow
@@ -48,6 +48,8 @@ Action catalog entries (descriptions, input examples), docs pages and their tabl
 - **Action names are case-sensitive** and differ from the docs in places (e.g. `gitHub.issue.create`, `pagerDuty.*`, `serviceNow.*`, `script.run`). Copy the exact `name` and integer `version` from `describe`.
 - **`MAP` inputs of `http.*` actions take a stringified JSON object**, not a YAML mapping. Follow each input's `example`.
 - **`description` allows no punctuation**: only letters, digits, spaces, `_` and `-` (`^[A-Za-z0-9 _-]*$`, ≤200 chars). Periods, commas, and colons fail validation.
+- **The workflow jq engine lacks some standard builtins, and a jq error aborts the run even with `ignoreErrors: true`.** No `todate`, `strftime`, `IN`, or `abs` (use `todateiso8601`), and an `assign` integer literal past 32 bits becomes a string. Details and safe patterns: `## Expressions (jq)` in [references/action-mapping.md](references/action-mapping.md).
+- **An `assign` step takes at most 10 inputs** (not checked locally): split larger ones.
 - **No YAML anchors, aliases, or merge keys** (`&name`, `*name`, `<<:`): `write` and validate-workflow reject them (`yaml-aliases`). Write repeated values out in full.
 
 ## Workflow
@@ -89,6 +91,7 @@ For a new workflow, follow these steps. To change an existing workflow file, fol
      - Only when the workflow uses that step type: `### Loop`, `### Switch`, `### Wait`, `### Assign`, `### State`, `### Error`.
      - Only when an input needs `validations`: `## Validation types`. Only when the workflow uses constants: `### workflowConstants (Optional)`.
      - `### Calendar demo` is a complete example: read it only when no skeleton fits the request.
+   - [references/action-mapping.md](references/action-mapping.md): always `## Expressions (jq)` (transform order and jq gotchas); `## Email with attachments` when the workflow sends email.
    - [references/best-practices.md](references/best-practices.md): always `## Handle errors`, `## Secure credentials`, and `## Security` (approval gates, personal information); `## Design focused workflows` when deciding what belongs in one workflow and what becomes an input; `## Document workflows` for names, descriptions, and comments; `## Optimize performance` only when several steps need the same data. Skip `## Test before production` and `## Monitor and maintain`: they describe operating a workflow, not writing one.
 
    Then write it:
@@ -96,6 +99,8 @@ For a new workflow, follow these steps. To change an existing workflow file, fol
    - If the user did not specify a workflow name, propose one and get their confirmation before saving (fold it into the ordered question list from step 4); it cannot be changed later (see Gotchas).
    - Every action step has `type: action`, `action`, `version`, and `inputs`. Reference data with `${{ .workflowInputs.X }}`, `${{ .steps.<step>.outputs.<field> }}`, and inside loops `${{ .steps.<loop>.loop.element }}`.
    - Use `selectors` to extract only the fields later steps need: when a later step needs one field from an action's output (e.g. a count from `newrelic.nrdb.query`), add a `selectors` list (`name`, `expression`) under that step's `inputs` and reference `${{ .steps.<step>.outputs.<selectorName> }}`.
+   - Keep `${{ }}` expressions small and prefer NRQL, then a utility action, then small jq, then `script.run` (see `## Expressions (jq)`).
+   - When a workflow emails a list, table, or export, send it as an `attachments` entry (`QUERY`, `RAW`, or `DASHBOARD_SNAPSHOT`) instead of building the body in jq.
    - **Secrets**: credentials only as `${{ :secrets:KEY }}`, `${{ :secrets:NAMESPACE:KEY }}`, or `${{ :secrets:SCOPE:NAMESPACE:KEY }}`. Never place a token, key, password, or webhook URL in plaintext, and never ask the user for a secret's value.
    - Add error handling for calls that leave New Relic (`http.*`, Slack, Teams, AWS, and other third-party actions): check `success` with a `switch` after the call, and route failures to a notification step with `ignoreErrors: true`. Do not add this for `newrelic.*` actions (e.g. `newrelic.nrdb.query`, `newrelic.ingest.sendLogs`) unless the user asks: keep those workflows to the steps requested.
    - Put a human approval gate (`newrelic.notification.createSignalUrl` + notification + `wait` step with `signals`) before destructive operations: deleting resources, stopping/terminating/scaling down production, rollbacks, IAM changes.

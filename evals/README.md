@@ -8,7 +8,7 @@ Agent-level evals: they check what an AI agent actually does when it follows a `
 
 - Node.js 22+ and the `claude` CLI on your `PATH`, already logged in. An OAuth login, `ANTHROPIC_API_KEY`, or an `apiKeyHelper` in `~/.claude/settings.json` all work. The runner reads `apiKeyHelper` itself and passes it to the eval session (see [What a run does](#what-a-run-does)).
 - Runs spend real API credit: roughly $0.10 to $2 per case. `--max-budget-usd` (default 2) caps each run. Use `--dry-run` first to see what would run.
-- Runs are sequential. The 17 workflow-automation cases take a while; use `--skill` and `--case` while iterating.
+- Runs are sequential. The 19 workflow-automation cases take a while; use `--skill` and `--case` while iterating.
 
 ## Quick start
 

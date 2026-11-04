@@ -58,6 +58,20 @@ const LIVE_ACTIONS = [
     outputs: [{ name: 'threadTs' }, { name: 'success' }],
     timeout: { action: 20 },
   },
+  {
+    name: 'newrelic.notification.sendEmail',
+    version: 1,
+    description: 'Send an email',
+    // The live input is plural (attachments); the docs rows are singular (attachment.*).
+    inputs: [
+      { name: 'destinationId', type: 'STRING', required: true, secretAllowed: false },
+      { name: 'subject', type: 'STRING', required: true, secretAllowed: false },
+      { name: 'message', type: 'STRING', required: true, secretAllowed: false },
+      { name: 'attachments', type: 'LIST', required: false, secretAllowed: false },
+    ],
+    outputs: [{ name: 'attachments' }],
+    timeout: { action: 30 },
+  },
   { name: 'internal.only', version: 2, description: 'Not in docs', inputs: [], outputs: [], timeout: null },
 ];
 
@@ -141,7 +155,7 @@ const write = (argv, text = YAML) => run(['write', '--stdin', ...argv], { stdin:
 test('actions lists live catalog sorted, with variables not interpolation', async () => {
   const { code, json } = await run(['actions', '--account', '999']);
   assert.equal(code, 0);
-  assert.deepEqual(json.map((a) => a.name), ['http.get', 'internal.only', 'slack.chat.postMessage']);
+  assert.deepEqual(json.map((a) => a.name), ['http.get', 'internal.only', 'newrelic.notification.sendEmail', 'slack.chat.postMessage']);
   assert.deepEqual(Object.keys(json[0]), ['name', 'version']);
   assert.equal(calls[0].variables.accountId, 999);
   assert.ok(calls[0].query.includes('$accountId: Int!'));
@@ -213,6 +227,13 @@ test('describe keeps nested docs-only sub-fields of live inputs', async () => {
   const { json } = await run(['describe', 'slack.chat.postMessage']);
   const nested = json.inputs.filter((i) => i.docsOnly).map((i) => i.name);
   assert.deepEqual(nested, ['attachment.filename', 'attachment.content']);
+  assert.ok(!json.inputs.some((i) => i.name === 'selectors'), 'docs-only top-level inputs are not added');
+});
+
+test('describe maps singular docs sub-fields (attachment.*) onto a plural live input (attachments)', async () => {
+  const { json } = await run(['describe', 'newrelic.notification.sendEmail']);
+  const nested = json.inputs.filter((i) => i.docsOnly).map((i) => i.name);
+  assert.deepEqual(nested, ['attachment.type', 'attachment.query', 'attachment.filename']);
   assert.ok(!json.inputs.some((i) => i.name === 'selectors'), 'docs-only top-level inputs are not added');
 });
 
